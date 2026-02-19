@@ -16,9 +16,9 @@ function songSearch(input) {
 
   for (const key in dummySongs) {
     if (key.toLowerCase().includes(input)) { keys.push.apply(keys, dummySongs[key]); }
-    else { // if artist not included, check songs
+    else {
       for (const song of dummySongs[key]) {
-        if (song.toLowerCase().includes(input)) { songs.push(song);} 
+        if (song.toLowerCase().includes(input)) { songs.push(song); } 
       }
     }
   }
@@ -112,6 +112,7 @@ function App() {
   };
 
   const searchResults = songSearch(searchQuery) || [];
+  const hasSelections = selectedTracks.length > 0 || uploadedFile;
 
   return (
     <div className="app">
@@ -119,64 +120,71 @@ function App() {
 
       <div className="main">
         {/* LEFT PANEL */}
-        <div className="left-panel" style={{ width: dividerX }}>
-          
-          {(selectedTracks.length > 0 || uploadedFile) && (
-            <div>
-              <div className="section-label">Selected Tracks</div>
+        <div className="left-panel" style={{ width: dividerX, display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
 
-              <div className="selected-container">
-                {uploadedFile && (
-                  <div className="selected-item">
-                    <span>{uploadedFile.name}</span>
-                    <select
-                      value={uploadedFile.stem}
-                      onChange={(e) =>
-                        setUploadedFile({ ...uploadedFile, stem: e.target.value })
-                      }
-                      className="stem-select"
-                    >
-                      <option value="drums">Drums</option>
-                      <option value="melody">Melody</option>
-                      <option value="chords">Chords</option>
-                    </select>
-                    <button
-                      onClick={() => removeSelectedItem(uploadedFile.name)}
-                      className="remove-btn"
-                    >
-                      ×
-                    </button>
-                  </div>
-                )}
+          {/* Selected Tracks — always visible */}
+          <div style={{ flexShrink: 0 }}>
+            <div className="section-label">Selected Tracks</div>
 
-                {selectedTracks.map((track) => (
-                  <div key={track.name} className="selected-item">
-                    <span>{track.name}</span>
-                    <select
-                      value={track.stem}
-                      onChange={(e) =>
-                        updateTrackStem(track.name, e.target.value)
-                      }
-                      className="stem-select"
-                    >
-                      <option value="drums">Drums</option>
-                      <option value="melody">Melody</option>
-                      <option value="chords">Chords</option>
-                    </select>
-                    <button
-                      onClick={() => removeSelectedItem(track.name)}
-                      className="remove-btn"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
-              </div>
+            <div className="selected-container">
+              {!hasSelections ? (
+                <span style={{ color: "var(--color-text-muted)", fontSize: "var(--font-size-small)", padding: "4px 8px" }}>
+                  No tracks selected
+                </span>
+              ) : (
+                <>
+                  {uploadedFile && (
+                    <div className="selected-item">
+                      <span>{uploadedFile.name}</span>
+                      <select
+                        value={uploadedFile.stem}
+                        onChange={(e) =>
+                          setUploadedFile({ ...uploadedFile, stem: e.target.value })
+                        }
+                        className="stem-select"
+                      >
+                        <option value="drums">Drums</option>
+                        <option value="melody">Melody</option>
+                        <option value="chords">Chords</option>
+                      </select>
+                      <button
+                        onClick={() => removeSelectedItem(uploadedFile.name)}
+                        className="remove-btn"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  )}
+
+                  {selectedTracks.map((track) => (
+                    <div key={track.name} className="selected-item">
+                      <span>{track.name}</span>
+                      <select
+                        value={track.stem}
+                        onChange={(e) =>
+                          updateTrackStem(track.name, e.target.value)
+                        }
+                        className="stem-select"
+                      >
+                        <option value="drums">Drums</option>
+                        <option value="melody">Melody</option>
+                        <option value="chords">Chords</option>
+                      </select>
+                      <button
+                        onClick={() => removeSelectedItem(track.name)}
+                        className="remove-btn"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </>
+              )}
             </div>
-          )}
+          </div>
 
           {/* Upload */}
-          <div>
+          <div style={{ flexShrink: 0 }}>
             <div className="section-label">Upload</div>
 
             <input
@@ -192,29 +200,27 @@ function App() {
               onClick={() => fileInputRef.current.click()}
             >
               <div className="upload-text">
-                Drag & drop audio file
+                Drag and drop audio file
                 <br />
                 or click to upload
               </div>
             </div>
           </div>
 
-          {/* Search */}
-          <div>
+          {/* Search — fills remaining space to bottom */}
+          <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
             <div className="section-label">Search Songs</div>
 
             <input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Artist name..."
+              placeholder="Search"
               className="search-input"
             />
 
-            <div className="search-results">
+            <div className="search-results" style={{ flex: 1, overflowY: "auto", minHeight: 0, maxHeight: "none" }}>
               {searchResults.map((song) => {
-                const isSelected = selectedTracks.some(
-                  (t) => t.name === song
-                );
+                const isSelected = selectedTracks.some((t) => t.name === song);
                 return (
                   <div key={song} className="search-item">
                     <span className="song-name">{song}</span>
@@ -247,7 +253,7 @@ function App() {
             <textarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              placeholder="Describe the beat you want..."
+              placeholder="Describe the song you want..."
               className="prompt-textarea"
             />
 

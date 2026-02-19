@@ -2,16 +2,16 @@ function Navbar() {
   return (
     <nav style={{
       padding: '18px 32px',
-      borderBottom: '1px solid #2a2a3a',
-      background: '#0a0a0f',
+      borderBottom: '1px solid var(--color-border)',
+      background: 'var(--color-bg)',
     }}>
       <span style={{
-        fontFamily: "'Georgia', serif",
-        fontSize: '22px',
+        color: 'var(--color-text-label)',
+        fontFamily: 'var(--font-heading)',
+        fontSize: 'var(--font-size-heading)',
         letterSpacing: '0.06em',
-        color: '#f0e8d8',
       }}>
-        Sound Ethics
+        SOUND ETHICS
       </span>
     </nav>
   )
