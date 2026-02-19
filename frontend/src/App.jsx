@@ -8,6 +8,24 @@ const dummySongs = {
   "Kendrick Lamar": ["HUMBLE.", "DNA.", "Alright"],
 };
 
+function songSearch(input) { 
+  const keys = [];
+  const songs = [];
+  
+  input = input.toLowerCase();
+
+  for (const key in dummySongs) {
+    if (key.toLowerCase().includes(input)) { keys.push.apply(keys, dummySongs[key]); }
+    else { // if artist not included, check songs
+      for (const song of dummySongs[key]) {
+        if (song.toLowerCase().includes(input)) { songs.push(song);} 
+      }
+    }
+  }
+
+  return keys.concat(songs);
+}
+
 function App() {
   const [dividerX, setDividerX] = useState(window.innerWidth / 2);
   const [dividerY, setDividerY] = useState(window.innerHeight / 2);
@@ -93,7 +111,7 @@ function App() {
     if (uploadedFile?.name === name) setUploadedFile({ ...uploadedFile, stem });
   };
 
-  const searchResults = dummySongs[searchQuery] || [];
+  const searchResults = songSearch(searchQuery) || [];
 
   return (
     <div className="app">
