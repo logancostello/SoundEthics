@@ -192,7 +192,7 @@ function App() {
               onClick={() => fileInputRef.current.click()}
             >
               <div className="upload-text">
-                Drag & drop audio file
+                Drag and drop audio file
                 <br />
                 or click to upload
               </div>
@@ -206,7 +206,7 @@ function App() {
             <input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Artist name..."
+              placeholder="Search"
               className="search-input"
             />
 
@@ -247,7 +247,7 @@ function App() {
             <textarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              placeholder="Describe the beat you want..."
+              placeholder="Describe the song you want..."
               className="prompt-textarea"
             />
 
