@@ -5,16 +5,16 @@
 
 :root {
   /* Colors */
-  --color-bg: #111111;
+  --color-bg: #151515;
   --color-bg-panel: #1D1D1D;
   --color-bg-item: #1D1D1D;
   --color-bg-hover: #1D1D1D;
   --color-border: #1D1D1D;
-  --color-border-subtle: #000000;
+  --color-border-subtle: #151515;
 
   --color-accent: #D6FF62;      
   --color-text: #e8e0d0;       
-  --color-text-muted: #e8e0d0;
+  --color-text-muted: #767676;
   --color-text-dim: #e8e0d0;
   --color-text-label: #D6FF62;  
   --color-text-accent: #e8e0d0;
@@ -98,8 +98,6 @@ body {
   background: var(--color-bg-panel);
   padding: 8px;
   border-radius: 4px;
-  max-height: 140px;
-  overflow-y: auto;
 }
 
 .selected-item {
@@ -136,7 +134,7 @@ body {
 .upload-box {
   border: 1px dashed var(--color-border);
   background: var(--color-bg-item);
-  height: 180px;
+  height: 80px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -151,7 +149,7 @@ body {
 
 .upload-text {
   font-size: var(--font-size-body);
-  color: var(--color-text-dim);
+  color: var(--color-text-muted);
   text-align: center;
 }
 
@@ -169,10 +167,13 @@ body {
   letter-spacing: var(--letter-spacing-body);
 }
 
+.search-input::placeholder {
+  color: var(--color-text-muted);
+}
+
 .search-results {
   margin-top: 8px;
-  max-height: 120px;
-  overflow-y: auto;
+  min-height: 60px;
   border: 1px solid var(--color-border-subtle);
   border-radius: 4px;
   background: var(--color-bg-item);
@@ -186,7 +187,7 @@ body {
 }
 
 .song-name {
-  color: var(--color-text-muted);
+  color: var(--color-text);
   font-size: var(--font-size-small);
 }
 
@@ -267,6 +268,10 @@ body {
   font-family: var(--font-primary);
   outline: none;
   letter-spacing: var(--letter-spacing-body);
+}
+
+.prompt-textarea::placeholder {
+  color: var(--color-text-muted);
 }
 
 /* Generate button */

@@ -11,7 +11,7 @@ function Navbar() {
         fontSize: 'var(--font-size-heading)',
         letterSpacing: '0.06em',
       }}>
-        Sound Ethics
+        SOUND ETHICS
       </span>
     </nav>
   )
