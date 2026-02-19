@@ -4,7 +4,7 @@ import "./App.css";
 
 const dummySongs = {
   "Taylor Swift": ["Shake it Off", "Love Story", "Blank Space"],
-  Drake: ["God's Plan", "One Dance", "In My Feelings"],
+  "Drake": ["God's Plan", "One Dance", "In My Feelings"],
   "Kendrick Lamar": ["HUMBLE.", "DNA.", "Alright"],
 };
 
