@@ -5,6 +5,16 @@ import requests
 import torch
 import os
 
+
+'''
+-- NOTES / LINKS ---
+tutorial for uploading content came from here: https://flask.palletsprojects.com/en/stable/patterns/fileuploads/
+'''
+
+'''
+--- SETUP ---
+'''
+
 app = Flask(__name__)
 
 # define location for uploaded content
@@ -31,9 +41,6 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# TODO: change this so that it returns actual audio, not just Tensor (how to do that, i don't know)
-# TODO: should store and return the sample rate so that we can use audio also
-# or, could write the tensor in main ...
 '''
 consumes path to original audiofile, desired stem type (must be one of "drums", "bass", "vocals", "other")
 returns torch.Tensor representation of stem split
@@ -48,7 +55,7 @@ def split_audio(audio_path, desired_stem):
         if stem == desired_stem: 
             return source
     
-    raise ValueError("Something went wrong!")
+    raise ValueError("Something went wrong when splitting audio!")
 
 '''
 -- ENDPOINTS --
@@ -59,7 +66,7 @@ def split_audio(audio_path, desired_stem):
 def hello_world():
     return "<p>Hello, World!</p>"
 
-# endpoint: user can upload file
+# endpoint: user uploads file that is stem-split
 @app.route('/upload_file', methods=['GET', 'POST'])
 def upload_file():
     if request.method == 'POST':
@@ -77,9 +84,8 @@ def upload_file():
             raise ValueError("No file uploaded!")
         if not allowed_file(file.filename):
             raise ValueError("File type not allowed.")
-        
-
-        # create directories for uploaded file, soon-to-be split file
+    
+        # create directories for uploaded file, stem split file
         os.makedirs(UPLOAD_FOLDER, exist_ok=True)
         os.makedirs(STEM_FOLDER, exist_ok=True)
 
@@ -89,7 +95,6 @@ def upload_file():
         file.save(upload_filepath)
 
         # read from uploaded place, call stem split
-        # TODO: this needs to return the sample rate also
         stem_tensor = split_audio(upload_filepath, stem_type)
 
         # save stem split
@@ -98,7 +103,7 @@ def upload_file():
         stem_filepath = os.path.join(app.config['STEM_FOLDER'], stem_filename)
         demucs.api.save_audio(stem_tensor, stem_filepath, samplerate=separator.samplerate)
 
-        # finally, redirect to there (instead of just the original place)
+        # finally, redirect user to stem split
         return redirect(url_for('download_stem', name=stem_filename))
 
     return """
@@ -115,25 +120,10 @@ def upload_file():
     </form>
     """
 
-# endpoint: user can download file
-# NOTE: this is automatic redirect, but we want that to be the stem, not the original upload, right? 
+# endpoint: user can download stem-split file
 @app.route('/stems/<name>')
 def download_stem(name):
     return send_from_directory(app.config["STEM_FOLDER"], name)
 
-# TODO!!
-# endpoint: split the file!!
-@app.route("/api/stem-split")
-def split_stems():
-    # for now, just pass in some local file .. can make bigger changes latear
-    print("hello brother")
-    # TODO: split some stems and what not .. make sure we have everything created and installed correctly
-
 if __name__ == '__main__':
     app.run(debug=True)
-
-
-'''
-- tutorial for uploading content came from here: https://flask.palletsprojects.com/en/stable/patterns/fileuploads/
-- 
-'''
