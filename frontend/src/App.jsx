@@ -32,7 +32,7 @@ function App() {
   const [prompt, setPrompt] = useState("");
   const [uploadedFile, setUploadedFile] = useState(null);
   const [dragActive, setDragActive] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("Taylor Swift");
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedTracks, setSelectedTracks] = useState([]);
 
   const draggingX = useRef(false);

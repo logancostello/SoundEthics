@@ -119,6 +119,7 @@ body {
   font-size: var(--font-size-small);
   font-family: var(--font-primary);
   letter-spacing: var(--letter-spacing-body);
+  margin-left: auto;
 }
 
 .remove-btn {
