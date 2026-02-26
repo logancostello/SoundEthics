@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import Navbar from "./components/Navbar";
+import AudioPlayer from "./components/AudioPlayer";
 import { handleGenerate } from "./services/generateService";
 import "./App.css";
 
@@ -226,7 +227,7 @@ function App() {
         {/* RIGHT PANEL */}
         <div className="right-panel" ref={rightPanelRef}>
           <div className="top-right" style={{ height: dividerY }}>
-            <div className="section-label">Prompt</div>
+            <div className="section-label" style={{ marginBottom: 0 }}>Prompt</div>
 
             <textarea
               value={prompt}
@@ -239,7 +240,6 @@ function App() {
               {isLoading ? "Generating..." : "Generate"}
             </button>
 
-            {/* Error — shown below generate button */}
             {error && (
               <p style={{ color: "#ff6b6b", fontSize: "var(--font-size-small)", margin: 0 }}>
                 {error}
@@ -251,8 +251,10 @@ function App() {
             <div className="divider-hitbox-y" />
           </div>
 
-          {/* BOTTOM RIGHT — audio player + download on success */}
+          {/* BOTTOM RIGHT */}
           <div className="bottom-right">
+            <div className="section-label">Generated Output</div>
+
             {isLoading && (
               <p style={{ color: "var(--color-text-muted)", fontSize: "var(--font-size-small)" }}>
                 Splitting stems, this may take a minute...
@@ -260,19 +262,7 @@ function App() {
             )}
 
             {stemResult && !isLoading && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                <p style={{ fontSize: "var(--font-size-small)", color: "var(--color-text-muted)" }}>
-                  {stemResult.filename}
-                </p>
-                <audio controls src={stemResult.audioUrl} style={{ width: "100%" }} />
-                <a
-                  href={stemResult.audioUrl}
-                  download={stemResult.filename}
-                  style={{ color: "var(--color-accent)", fontSize: "var(--font-size-small)" }}
-                >
-                  Download
-                </a>
-              </div>
+              <AudioPlayer src={stemResult.audioUrl} filename={stemResult.filename} />
             )}
           </div>
         </div>
