@@ -4,6 +4,7 @@ import demucs.api
 import requests
 import torch
 import os
+from flask_cors import CORS
 
 
 '''
@@ -16,6 +17,7 @@ tutorial for uploading content came from here: https://flask.palletsprojects.com
 '''
 
 app = Flask(__name__)
+CORS(app)              
 
 # define location for uploaded content
 UPLOAD_FOLDER = 'uploaded_content/'
@@ -104,7 +106,7 @@ def upload_file():
         demucs.api.save_audio(stem_tensor, stem_filepath, samplerate=separator.samplerate)
 
         # finally, redirect user to stem split
-        return redirect(url_for('download_stem', name=stem_filename))
+        return {"url": url_for('download_stem', name=stem_filename, _external=True)}
 
     return """
     <h1>Upload & Split Audio</h1>

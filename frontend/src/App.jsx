@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import Navbar from "./components/Navbar";
+import { handleGenerate } from "./services/generateService";
 import "./App.css";
 
 const dummySongs = {
@@ -33,6 +34,9 @@ function App() {
   const [dragActive, setDragActive] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTracks, setSelectedTracks] = useState([]);
+  const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [stemResult, setStemResult] = useState(null); // { audioUrl, filename }
 
   const draggingX = useRef(false);
   const draggingY = useRef(false);
@@ -79,9 +83,13 @@ function App() {
     document.body.style.cursor = "row-resize";
   };
 
-  const handleGenerate = () => {
-    console.log("Generating with prompt:", prompt);
-    console.log("Selected Tracks:", selectedTracks);
+  const onGenerate = () => {
+    setStemResult(null);
+    handleGenerate(selectedTracks, {
+      onError: setError,
+      onSuccess: (audioUrl, filename) => setStemResult({ audioUrl, filename }),
+      onLoading: setIsLoading,
+    });
   };
 
   const handleFiles = (files) => {
@@ -120,7 +128,7 @@ function App() {
         {/* LEFT PANEL */}
         <div className="left-panel" style={{ width: dividerX, display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
 
-          {/* Selected Tracks — always visible */}
+          {/* Selected Tracks */}
           <div style={{ flexShrink: 0 }}>
             <div className="section-label">Selected Tracks</div>
 
@@ -180,7 +188,7 @@ function App() {
             </div>
           </div>
 
-          {/* Search — fills remaining space to bottom */}
+          {/* Search */}
           <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
             <div className="section-label">Search Songs</div>
 
@@ -217,10 +225,7 @@ function App() {
 
         {/* RIGHT PANEL */}
         <div className="right-panel" ref={rightPanelRef}>
-          <div
-            className="top-right"
-            style={{ height: dividerY }}
-          >
+          <div className="top-right" style={{ height: dividerY }}>
             <div className="section-label">Prompt</div>
 
             <textarea
@@ -230,16 +235,46 @@ function App() {
               className="prompt-textarea"
             />
 
-            <button onClick={handleGenerate} className="generate-btn">
-              Generate
+            <button onClick={onGenerate} className="generate-btn" disabled={isLoading}>
+              {isLoading ? "Generating..." : "Generate"}
             </button>
+
+            {/* Error — shown below generate button */}
+            {error && (
+              <p style={{ color: "#ff6b6b", fontSize: "var(--font-size-small)", margin: 0 }}>
+                {error}
+              </p>
+            )}
           </div>
 
           <div className="horizontal-divider" onMouseDown={startDraggingY}>
             <div className="divider-hitbox-y" />
           </div>
 
-          <div className="bottom-right" />
+          {/* BOTTOM RIGHT — audio player + download on success */}
+          <div className="bottom-right">
+            {isLoading && (
+              <p style={{ color: "var(--color-text-muted)", fontSize: "var(--font-size-small)" }}>
+                Splitting stems, this may take a minute...
+              </p>
+            )}
+
+            {stemResult && !isLoading && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <p style={{ fontSize: "var(--font-size-small)", color: "var(--color-text-muted)" }}>
+                  {stemResult.filename}
+                </p>
+                <audio controls src={stemResult.audioUrl} style={{ width: "100%" }} />
+                <a
+                  href={stemResult.audioUrl}
+                  download={stemResult.filename}
+                  style={{ color: "var(--color-accent)", fontSize: "var(--font-size-small)" }}
+                >
+                  Download
+                </a>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
