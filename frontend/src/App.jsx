@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import Navbar from "./components/Navbar";
+import AudioPlayer from "./components/AudioPlayer";
+import { handleGenerate } from "./services/generateService";
 import "./App.css";
 
 const dummySongs = {
@@ -30,10 +32,12 @@ function App() {
   const [dividerX, setDividerX] = useState(window.innerWidth / 2);
   const [dividerY, setDividerY] = useState(window.innerHeight / 2);
   const [prompt, setPrompt] = useState("");
-  const [uploadedFile, setUploadedFile] = useState(null);
   const [dragActive, setDragActive] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTracks, setSelectedTracks] = useState([]);
+  const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [stemResult, setStemResult] = useState(null); // { audioUrl, filename }
 
   const draggingX = useRef(false);
   const draggingY = useRef(false);
@@ -80,39 +84,42 @@ function App() {
     document.body.style.cursor = "row-resize";
   };
 
-  const handleGenerate = () => {
-    console.log("Generating with prompt:", prompt);
-    console.log("Selected Tracks:", selectedTracks);
+  const onGenerate = () => {
+    setStemResult(null);
+    handleGenerate(selectedTracks, {
+      onError: setError,
+      onSuccess: (audioUrl, filename) => setStemResult({ audioUrl, filename }),
+      onLoading: setIsLoading,
+    });
   };
 
-  const handleFiles = (file) => {
-    if (file) {
-      setUploadedFile({ name: file.name, stem: "melody" });
-    }
+  const handleFiles = (files) => {
+    const newTracks = Array.from(files)
+      .filter(f => !selectedTracks.some(t => t.name === f.name))
+      .map(f => ({ name: f.name, stem: "vocals", file: f }));
+    setSelectedTracks(prev => [...prev, ...newTracks]);
   };
 
   const toggleTrack = (trackName) => {
     setSelectedTracks((prev) => {
       const exists = prev.find((t) => t.name === trackName);
       if (exists) return prev.filter((t) => t.name !== trackName);
-      return [...prev, { name: trackName, stem: "melody" }];
+      return [...prev, { name: trackName, stem: "vocals" }];
     });
   };
 
   const removeSelectedItem = (name) => {
-    if (uploadedFile?.name === name) setUploadedFile(null);
-    else setSelectedTracks((prev) => prev.filter((t) => t.name !== name));
+    setSelectedTracks((prev) => prev.filter((t) => t.name !== name));
   };
 
   const updateTrackStem = (name, stem) => {
     setSelectedTracks((prev) =>
       prev.map((t) => (t.name === name ? { ...t, stem } : t))
     );
-    if (uploadedFile?.name === name) setUploadedFile({ ...uploadedFile, stem });
   };
 
   const searchResults = songSearch(searchQuery) || [];
-  const hasSelections = selectedTracks.length > 0 || uploadedFile;
+  const hasSelections = selectedTracks.length > 0;
 
   return (
     <div className="app">
@@ -122,7 +129,7 @@ function App() {
         {/* LEFT PANEL */}
         <div className="left-panel" style={{ width: dividerX, display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
 
-          {/* Selected Tracks — always visible */}
+          {/* Selected Tracks */}
           <div style={{ flexShrink: 0 }}>
             <div className="section-label">Selected Tracks</div>
 
@@ -132,53 +139,27 @@ function App() {
                   No tracks selected
                 </span>
               ) : (
-                <>
-                  {uploadedFile && (
-                    <div className="selected-item">
-                      <span>{uploadedFile.name}</span>
-                      <select
-                        value={uploadedFile.stem}
-                        onChange={(e) =>
-                          setUploadedFile({ ...uploadedFile, stem: e.target.value })
-                        }
-                        className="stem-select"
-                      >
-                        <option value="drums">Drums</option>
-                        <option value="melody">Melody</option>
-                        <option value="chords">Chords</option>
-                      </select>
-                      <button
-                        onClick={() => removeSelectedItem(uploadedFile.name)}
-                        className="remove-btn"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  )}
-
-                  {selectedTracks.map((track) => (
-                    <div key={track.name} className="selected-item">
-                      <span>{track.name}</span>
-                      <select
-                        value={track.stem}
-                        onChange={(e) =>
-                          updateTrackStem(track.name, e.target.value)
-                        }
-                        className="stem-select"
-                      >
-                        <option value="drums">Drums</option>
-                        <option value="melody">Melody</option>
-                        <option value="chords">Chords</option>
-                      </select>
-                      <button
-                        onClick={() => removeSelectedItem(track.name)}
-                        className="remove-btn"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))}
-                </>
+                selectedTracks.map((track) => (
+                  <div key={track.name} className="selected-item">
+                    <span>{track.name}</span>
+                    <select
+                      value={track.stem}
+                      onChange={(e) => updateTrackStem(track.name, e.target.value)}
+                      className="stem-select"
+                    >
+                      <option value="vocals">Vocals</option>
+                      <option value="drums">Drums</option>
+                      <option value="bass">Bass</option>
+                      <option value="other">Other</option>
+                    </select>
+                    <button
+                      onClick={() => removeSelectedItem(track.name)}
+                      className="remove-btn"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))
               )}
             </div>
           </div>
@@ -190,8 +171,9 @@ function App() {
             <input
               type="file"
               accept="audio/*"
+              multiple
               ref={fileInputRef}
-              onChange={(e) => e.target.files[0] && handleFiles(e.target.files[0])}
+              onChange={(e) => e.target.files.length && handleFiles(e.target.files)}
               hidden
             />
 
@@ -207,7 +189,7 @@ function App() {
             </div>
           </div>
 
-          {/* Search — fills remaining space to bottom */}
+          {/* Search */}
           <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
             <div className="section-label">Search Songs</div>
 
@@ -244,11 +226,8 @@ function App() {
 
         {/* RIGHT PANEL */}
         <div className="right-panel" ref={rightPanelRef}>
-          <div
-            className="top-right"
-            style={{ height: dividerY }}
-          >
-            <div className="section-label">Prompt</div>
+          <div className="top-right" style={{ height: dividerY }}>
+            <div className="section-label" style={{ marginBottom: 0 }}>Prompt</div>
 
             <textarea
               value={prompt}
@@ -257,16 +236,35 @@ function App() {
               className="prompt-textarea"
             />
 
-            <button onClick={handleGenerate} className="generate-btn">
-              Generate
+            <button onClick={onGenerate} className="generate-btn" disabled={isLoading}>
+              {isLoading ? "Generating..." : "Generate"}
             </button>
+
+            {error && (
+              <p style={{ color: "#ff6b6b", fontSize: "var(--font-size-small)", margin: 0 }}>
+                {error}
+              </p>
+            )}
           </div>
 
           <div className="horizontal-divider" onMouseDown={startDraggingY}>
             <div className="divider-hitbox-y" />
           </div>
 
-          <div className="bottom-right" />
+          {/* BOTTOM RIGHT */}
+          <div className="bottom-right">
+            <div className="section-label">Generated Output</div>
+
+            {isLoading && (
+              <p style={{ color: "var(--color-text-muted)", fontSize: "var(--font-size-small)" }}>
+                Splitting stems, this may take a minute...
+              </p>
+            )}
+
+            {stemResult && !isLoading && (
+              <AudioPlayer src={stemResult.audioUrl} filename={stemResult.filename} />
+            )}
+          </div>
         </div>
       </div>
     </div>

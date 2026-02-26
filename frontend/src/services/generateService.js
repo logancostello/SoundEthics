@@ -1,0 +1,73 @@
+const BACKEND_URL = "http://127.0.0.1:5000";
+
+/*
+  handleGenerate
+  - selectedTracks: array of { name, stem, file? }
+  - onError: (message: string) => void
+  - onSuccess: (audioUrl: string, filename: string) => void
+  - onLoading: (isLoading: bool) => void
+*/
+export async function handleGenerate(selectedTracks, { onError, onSuccess, onLoading }) {
+  // validation
+  if (selectedTracks.length === 0) {
+    onError("No tracks selected. Please upload or select a track first.");
+    return;
+  }
+
+  if (selectedTracks.length > 1) {
+    onError("Only one track can be processed at a time. Please remove extras from your selection.");
+    return;
+  }
+
+  const track = selectedTracks[0];
+
+  if (!track.file) {
+    onError(`"${track.name}" is a search result, not an uploaded file. Please upload an audio file to use Generate.`);
+    return;
+  }
+
+  // build request
+  const formData = new FormData();
+  formData.append("file", track.file);
+  formData.append("stem", track.stem);
+
+  onLoading(true);
+  onError(null);
+
+  try {
+    // POST to upload and split
+    console.log("Step 1: sending POST...");
+    const response = await fetch(`${BACKEND_URL}/upload_file`, {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+    }
+
+    // Flask returns { url: "http://127.0.0.1:5000/stems/<filename>" }
+    console.log("Step 2: POST response status:", response.status);
+    const data = await response.json();
+    console.log("Step 3: got JSON:", data);
+
+    // fetch the actual audio file from the returned URL
+    const fileResponse = await fetch(data.url);
+    console.log("Step 4: file fetch status:", fileResponse.status);
+
+    if (!fileResponse.ok) {
+      throw new Error("Failed to fetch stem file.");
+    }
+
+    const blob = await fileResponse.blob();
+    const audioUrl = URL.createObjectURL(blob);
+    const baseName = track.name.replace(/\.[^/.]+$/, "");
+    const filename = `${baseName}_${track.stem}.wav`;
+
+    onSuccess(audioUrl, filename);
+  } catch (err) {
+    onError(`Generation failed: ${err.message}`);
+  } finally {
+    onLoading(false);
+  }
+}
