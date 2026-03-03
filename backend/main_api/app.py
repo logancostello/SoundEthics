@@ -1,5 +1,6 @@
 from flask import Flask, request, flash, redirect, url_for, send_from_directory
 from werkzeug.utils import secure_filename
+import torch.nn.functional as F
 from scipy.io import wavfile
 from io import BytesIO
 import numpy as np
@@ -61,6 +62,34 @@ def split_audio(audio_path, desired_stem):
     
     raise ValueError("Something went wrong when splitting audio!")
 
+# convert crepe output to salience tensor with correct shape for JASCO
+# number of target bins and frames found within JASCO documentation
+def convert_crepe_to_jasco(activation, target_bins=53, target_frames=500):
+    S = torch.from_numpy(activation).float()
+
+    # activation initially (frequency, time), need to be (time, frequency)
+    S = S.T
+
+    # reduce number of pitch bins
+
+    # add 2 dimensions to be input to the average pooling
+    S = S.unsqueeze(0).unsqueeze(0)
+
+    # conduct average polling
+    S = F.adaptive_avg_pool2d(S, (target_bins, target_frames))
+
+    # reduce dimensions again
+    S = S.squeeze(0).squeeze(0)
+
+    # resample time frames
+    S = S.unsqueeze(0).unsqueeze(0)
+    S = F.interpolate(S, size=(target_bins, target_frames), mode="bilinear", align_corners=False)
+    S = S.squeeze(0).squeeze(0)  
+
+    # TODO: could round some values eventually to get better output, if we want ..
+
+    return S   
+
 # given audio filepath, returns salience representation as PyTorch tensor
 # NOTE: used ChatGPT to help generate this code
 # TODO: have to reshape melody to get working ...
@@ -74,6 +103,9 @@ def get_salience(filename):
     # if arrays don't have same length, raise error
     if (len(time) != len(frequency) or (len(frequency) != len(confidence))):
         raise ValueError("Crepe Array ouptut does not match!")
+    
+
+    return convert_crepe_to_jasco(activation)
 
     # convert numpy arrays to 2D salience matrix (torch.Tensor)
     freq_rounded = np.round(frequency)

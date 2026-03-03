@@ -81,7 +81,8 @@ def generate():
         tensor_buf.seek(0)
         melody_salience_tensor = torch.load(tensor_buf, map_location="cpu")
         # reshape in accordance with original JASCO demo notebook
-        melody_salience_tensor = melody_salience_tensor.permute(1, 0)
+        melody_salience_tensor = melody_salience_tensor
+        print(melody_salience_tensor.shape)
 
     # make call to JASCO API
     try:
