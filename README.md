@@ -6,7 +6,20 @@ Initial Setup:
 - create virtual environment with Python version 3.9.25
 - ```pip install -r requirements.txt```
 
-To run backend: 
-- ```$ cd backend```
-- ```flask run```
+To run frontend: 
+- ```cd frontend```
+- ```python app.py```
+
+To setup and run backend: 
+- create two virtual environments, each with Python version 3.9.25
+- activate first virtual environment:
+    - ```cd backend```
+    - ```cd main_api```
+    - ```pip install requirements.txt```
+    - ```python app.py```
+- activate second virtual environment:
+    - ```cd backend```
+    - ```cd jasco_api```
+    - ```pip install requirements.txt```
+    - ```python app.py```
 
