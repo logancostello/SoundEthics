@@ -92,42 +92,22 @@ def convert_crepe_to_jasco(activation, target_bins=53, target_frames=500):
 
 # given audio filepath, returns salience representation as PyTorch tensor
 # NOTE: used ChatGPT to help generate this code
-# TODO: have to reshape melody to get working ...
+# TODO: might want to normalize/alter the salience matrix in some way to improve output
 def get_salience(filename):
     # read in the audio file
     sr, audio = wavfile.read(filename)
 
     # predict time, frequency, confidence
-    time, frequency, confidence, activation = crepe.predict(audio, sr, viterbi=True)
+    time, frequency, confidence, activation = crepe.predict(audio, sr, viterbi=True, step_size=20)
 
     # if arrays don't have same length, raise error
     if (len(time) != len(frequency) or (len(frequency) != len(confidence))):
-        raise ValueError("Crepe Array ouptut does not match!")
-    
+        raise ValueError("Crepe Array ouptut does not match!")    
 
-    return convert_crepe_to_jasco(activation)
+    # convert ouptut to JASCO sizing
+    jasco_size_tensor = convert_crepe_to_jasco(activation)
 
-    # convert numpy arrays to 2D salience matrix (torch.Tensor)
-    freq_rounded = np.round(frequency)
-
-    # use to create first row of matrix
-    # plus + 1 is to be inclusive of max frequency
-    # cast to int for type issues when creating matrix
-    min_freq = 0
-    max_freq = int(max(freq_rounded) + 1)
-
-    # create array of frequencies from min to max, with step of 1
-    # this will be used as first column
-    freq_step = np.arange(min_freq, max_freq, 1)
-
-    # create empty 2D array
-    salience_matrix = np.zeros((max_freq, len(freq_rounded)))
-
-    # find row indices where frequencies match, set positions to 1
-    row_indices = np.searchsorted(freq_step, freq_rounded)
-    salience_matrix[row_indices, np.arange(len(freq_rounded))] = 1
-
-    return torch.tensor(salience_matrix)
+    return jasco_size_tensor
 
 # send data to JASCO server
 # consumes the JASCO URL, salience represention of melody (as tensor), path to .wav file, sample rate of drums, and a text prompt
