@@ -1,7 +1,6 @@
-from flask import Flask, request, flash, redirect, url_for, send_from_directory
+from flask import Flask, request, url_for, send_from_directory
 from werkzeug.utils import secure_filename
 import demucs.api
-import requests
 import torch
 import os
 from flask_cors import CORS
@@ -17,7 +16,7 @@ tutorial for uploading content came from here: https://flask.palletsprojects.com
 '''
 
 app = Flask(__name__)
-CORS(app)              
+CORS(app)
 
 # define location for uploaded content
 UPLOAD_FOLDER = 'uploaded_content/'
@@ -29,7 +28,15 @@ app.config['STEM_FOLDER'] = STEM_FOLDER
 
 # only allow certain files to be uploaded
 ALLOWED_EXTENSIONS = {'wav', 'mp3'}
-ALLOWED_STEMS = {"drums", "bass", "vocals", "other"}
+
+# stems accepted from the client
+ALLOWED_CLIENT_STEMS = {"drums", "melody"}
+
+# mapping from client stem name -> demucs stem name
+STEM_MAP = {
+    "drums": "drums",
+    "melody": "other",
+}
 
 # initialize stem-splitter with default parameters
 separator = demucs.api.Separator()
@@ -44,26 +51,28 @@ def allowed_file(filename):
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 '''
-consumes path to original audiofile, desired stem type (must be one of "drums", "bass", "vocals", "other")
+consumes path to original audiofile, desired stem type (must be one of "drums", "melody")
 returns torch.Tensor representation of stem split
 '''
-def split_audio(audio_path, desired_stem):
-    if desired_stem not in ALLOWED_STEMS:
-        raise ValueError("Desired Stem should be one of: drums, bass, vocals, other")
-    
+def split_audio(audio_path, client_stem):
+    if client_stem not in ALLOWED_CLIENT_STEMS:
+        raise ValueError(f"Desired stem should be one of: {', '.join(ALLOWED_CLIENT_STEMS)}")
+
+    demucs_stem = STEM_MAP[client_stem]
+
     origin, separated = separator.separate_audio_file(audio_path)
 
     for stem, source in separated.items():
-        if stem == desired_stem: 
+        if stem == demucs_stem:
             return source
-    
+
     raise ValueError("Something went wrong when splitting audio!")
 
 '''
 -- ENDPOINTS --
 '''
 
-# endpoint: home page 
+# endpoint: home page
 @app.route("/")
 def hello_world():
     return "<p>Hello, World!</p>"
@@ -78,15 +87,15 @@ def upload_file():
 
         # make sure upload was valid
         if 'file' not in request.files:
-             raise ValueError("No file uploaded!")
-        
+            raise ValueError("No file uploaded!")
+
         file = request.files['file']
-             
+
         if file.filename == '':
             raise ValueError("No file uploaded!")
         if not allowed_file(file.filename):
             raise ValueError("File type not allowed.")
-    
+
         # create directories for uploaded file, stem split file
         os.makedirs(UPLOAD_FOLDER, exist_ok=True)
         os.makedirs(STEM_FOLDER, exist_ok=True)
@@ -96,16 +105,16 @@ def upload_file():
         upload_filepath = os.path.join(app.config['UPLOAD_FOLDER'], upload_filename)
         file.save(upload_filepath)
 
-        # read from uploaded place, call stem split
+        # split audio; stem_type is the client name ("melody" maps to demucs "other")
         stem_tensor = split_audio(upload_filepath, stem_type)
 
-        # save stem split
-        base_name = os.path.splitext(upload_filename)[0]  
+        # save using the client stem name so the filename is human-readable
+        base_name = os.path.splitext(upload_filename)[0]
         stem_filename = f"{base_name}_{stem_type}.wav"
         stem_filepath = os.path.join(app.config['STEM_FOLDER'], stem_filename)
         demucs.api.save_audio(stem_tensor, stem_filepath, samplerate=separator.samplerate)
 
-        # finally, redirect user to stem split
+        # return URL to the stem file
         return {"url": url_for('download_stem', name=stem_filename, _external=True)}
 
     return """
@@ -113,10 +122,8 @@ def upload_file():
     <form method="post" enctype="multipart/form-data">
       <input type="file" name="file" accept="audio/*" required>
       <select name="stem" required>
-        <option value="vocals">vocals</option>
         <option value="drums">drums</option>
-        <option value="bass">bass</option>
-        <option value="other">other</option>
+        <option value="melody">melody</option>
       </select>
       <button type="submit">Upload</button>
     </form>
