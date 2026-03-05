@@ -5,6 +5,7 @@ import requests
 import torch
 import os
 from flask_cors import CORS
+from datetime import datetime
 
 
 '''
@@ -74,58 +75,85 @@ def upload_file():
     if request.method == 'POST':
 
         # get stem type selection
-        stem_type = request.form.get("stem")
+        # stem_type = request.form.get("stem")
 
         # make sure upload was valid
-        if 'file' not in request.files:
-             raise ValueError("No file uploaded!")
-        
-        file = request.files['file']
-             
-        if file.filename == '':
+        if 'other' not in request.files and 'drums' not in request.files:
             raise ValueError("No file uploaded!")
-        if not allowed_file(file.filename):
-            raise ValueError("File type not allowed.")
-    
+
         # create directories for uploaded file, stem split file
+        # do this only once
         os.makedirs(UPLOAD_FOLDER, exist_ok=True)
         os.makedirs(STEM_FOLDER, exist_ok=True)
 
-        # upload the original file
-        upload_filename = secure_filename(file.filename)
-        upload_filepath = os.path.join(app.config['UPLOAD_FOLDER'], upload_filename)
-        file.save(upload_filepath)
+        folder_name = datetime.now().strftime("%Y%m%d-%H%M%S-%f")
+        stem_folder_path = os.path.join(app.config["STEM_FOLDER"], folder_name)
+        
+        os.makedirs(stem_folder_path, exist_ok=True)
 
-        # read from uploaded place, call stem split
-        stem_tensor = split_audio(upload_filepath, stem_type)
+        for stem_type in ['other', 'drums']:
+            file = request.files[stem_type]
 
-        # save stem split
-        base_name = os.path.splitext(upload_filename)[0]  
-        stem_filename = f"{base_name}_{stem_type}.wav"
-        stem_filepath = os.path.join(app.config['STEM_FOLDER'], stem_filename)
-        demucs.api.save_audio(stem_tensor, stem_filepath, samplerate=separator.samplerate)
+            if file.filename == '':
+                #raise ValueError("No file uploaded!")
+                # we want to allow for missing files as long as there's at least one
+                continue
+
+            if not allowed_file(file.filename):
+                raise ValueError("File type not allowed.")
+
+            # upload the original file
+            upload_filename = secure_filename(file.filename)
+            upload_filepath = os.path.join(app.config['UPLOAD_FOLDER'], upload_filename)
+            file.save(upload_filepath)
+
+            # read from uploaded place, call stem split
+            stem_tensor = split_audio(upload_filepath, stem_type)
+
+            # save stem split
+            base_name = os.path.splitext(upload_filename)[0]  
+            stem_filename = f"{base_name}_{stem_type}.wav"
+            stem_filepath = os.path.join(stem_folder_path, stem_filename)
+            demucs.api.save_audio(stem_tensor, stem_filepath, samplerate=separator.samplerate)
 
         # finally, redirect user to stem split
-        return {"url": url_for('download_stem', name=stem_filename, _external=True)}
+        return {"url": url_for('download_stems', folder=folder_name, _external=True)}
 
     return """
     <h1>Upload & Split Audio</h1>
     <form method="post" enctype="multipart/form-data">
-      <input type="file" name="file" accept="audio/*" required>
+      <input type="file" name="other" accept="audio/*" required>
       <select name="stem" required>
-        <option value="vocals">vocals</option>
-        <option value="drums">drums</option>
-        <option value="bass">bass</option>
         <option value="other">other</option>
       </select>
+      <br>
+      <input type="file" name="drums" accept="audio/*" required>
+      <select name="stem" required>
+        <option value="drums">drums</option>
+      </select>
+      <br>
       <button type="submit">Upload</button>
     </form>
     """
 
 # endpoint: user can download stem-split file
-@app.route('/stems/<name>')
-def download_stem(name):
-    return send_from_directory(app.config["STEM_FOLDER"], name)
+@app.route('/stems/<folder>/<name>')
+def download_stem(folder, name):
+    dir = os.path.join(app.config["STEM_FOLDER"], folder)
+    return send_from_directory(dir, name)
+
+@app.route('/stems/<folder>')
+def download_stems(folder):
+    dir = os.path.join(app.config["STEM_FOLDER"], folder)
+    filenames = os.listdir(dir)
+
+    ret = ""
+    for file in filenames:
+        ret += f"""
+        <a href={url_for('download_stem', folder=folder, name=file, _external=True)}>Download {file}</a><br>
+        """
+
+    return ret
 
 if __name__ == '__main__':
     app.run(debug=True)
