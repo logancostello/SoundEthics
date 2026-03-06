@@ -67,7 +67,10 @@ def split_audio(audio_path, desired_stem):
 # endpoint: home page 
 @app.route("/")
 def hello_world():
-    return "<p>Hello, World!</p>"
+    return f"""<p>Hello, World!</p>
+    <br>
+    <a href={url_for("upload_file", _external=True)}>Upload File</a>
+    """
 
 # endpoint: user uploads file that is stem-split
 @app.route('/upload_file', methods=['GET', 'POST'])
