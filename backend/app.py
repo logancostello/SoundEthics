@@ -76,13 +76,7 @@ def hello_world():
 @app.route('/upload_file', methods=['GET', 'POST'])
 def upload_file():
     if request.method == 'POST':
-
-        # get stem type selection
-        # stem_type = request.form.get("stem")
-
-        # make sure upload was valid
-        if 'other' not in request.files and 'drums' not in request.files:
-            raise ValueError("No file uploaded!")
+        # no upload validation, that should take place on frontend
 
         # create directories for uploaded file, stem split file
         # do this only once
@@ -91,14 +85,13 @@ def upload_file():
 
         folder_name = datetime.now().strftime("%Y%m%d-%H%M%S-%f")
         stem_folder_path = os.path.join(app.config["STEM_FOLDER"], folder_name)
-        
+
         os.makedirs(stem_folder_path, exist_ok=True)
 
         for stem_type in ['other', 'drums']:
             file = request.files[stem_type]
 
             if file.filename == '':
-                #raise ValueError("No file uploaded!")
                 # we want to allow for missing files as long as there's at least one
                 continue
 
@@ -125,12 +118,12 @@ def upload_file():
     return """
     <h1>Upload & Split Audio</h1>
     <form method="post" enctype="multipart/form-data">
-      <input type="file" name="other" accept="audio/*" required>
+      <input type="file" name="other" accept="audio/*">
       <select name="stem" required>
         <option value="other">other</option>
       </select>
       <br>
-      <input type="file" name="drums" accept="audio/*" required>
+      <input type="file" name="drums" accept="audio/*">
       <select name="stem" required>
         <option value="drums">drums</option>
       </select>
