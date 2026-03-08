@@ -10,6 +10,7 @@ import torch
 import crepe
 import json
 import os
+from datetime import datetime
 
 '''
 -----
@@ -155,47 +156,57 @@ ENDPOINTS
 # endpoint: home page 
 @app.route("/")
 def hello_world():
-    return "<p>Hello, World!</p>"
+    return f"""<p>Hello, World!</p>
+    <br>
+    <a href={url_for("upload_file", _external=True)}>Upload File</a>
+    """
 
 # endpoint: user uploads file that is stem-split and used for generation
 # TODO: url, description, and generated filename (generated.wav) are currently hard-coded
 @app.route('/upload_file', methods=['GET', 'POST'])
 def upload_file():
     if request.method == 'POST':
-        stem_type = request.form.get("stem")
-
-        # validate uploaded file
-        if 'file' not in request.files:
-             raise ValueError("No file uploaded!")
-        
-        file = request.files['file']
-             
-        if file.filename == '':
-            raise ValueError("No file uploaded!")
-        if not allowed_file(file.filename):
-            raise ValueError("File type not allowed.")
-    
-        # create directories for uploaded file, stem split file, generated file (if they don't exist already)
+        # create directories for uploaded file, stem split file
+        # do this only once
         os.makedirs(UPLOAD_FOLDER, exist_ok=True)
         os.makedirs(STEM_FOLDER, exist_ok=True)
         os.makedirs(GENERATED_FOLDER, exist_ok=True)
 
-        # upload the original file to local folder
-        upload_filename = secure_filename(file.filename)
-        upload_filepath = os.path.join(app.config['UPLOAD_FOLDER'], upload_filename)
-        file.save(upload_filepath)
+        folder_name = datetime.now().strftime("%Y%m%d-%H%M%S-%f")
+        stem_folder_path = os.path.join(app.config["STEM_FOLDER"], folder_name)
+        gen_folder_path = os.path.join(app.config["GENERATED_FOLDER"], folder_name)
 
-        # read original file from new folder, call stem split
-        stem_tensor = split_audio(upload_filepath, stem_type)
+        # no input validation here, should take place on frontend
+        # if 'file' not in request.files:
+             # raise ValueError("No file uploaded!")
 
-        # save stem split to different local folder
-        base_name = os.path.splitext(upload_filename)[0]  
-        stem_filename = f"{base_name}_{stem_type}.wav"
-        stem_filepath = os.path.join(app.config['STEM_FOLDER'], stem_filename)
-        demucs.api.save_audio(stem_tensor, stem_filepath, samplerate=separator.samplerate)
+        for stem_type in ['other', 'drums']:
+        
+            file = request.files[stem_type]
+                
+            if file.filename == '':
+                # raise ValueError("No file uploaded!")
+                # we want to allow for missing files as long as there's at least one
+                continue
+            if not allowed_file(file.filename):
+                raise ValueError("File type not allowed.")
+
+            # upload the original file to local folder
+            upload_filename = secure_filename(file.filename)
+            upload_filepath = os.path.join(app.config['UPLOAD_FOLDER'], upload_filename)
+            file.save(upload_filepath)
+
+            # read original file from new folder, call stem split
+            stem_tensor = split_audio(upload_filepath, stem_type)
+
+            # save stem split to different local folder
+            base_name = os.path.splitext(upload_filename)[0]  
+            stem_filename = f"{base_name}_{stem_type}.wav"
+            stem_filepath = os.path.join(stem_folder_path, stem_filename)
+            demucs.api.save_audio(stem_tensor, stem_filepath, samplerate=separator.samplerate)
 
         # now, generate audio ...
-        
+        # TODO: any code after this has not been modified to work with multiple stems
         # instantiate all data that will be passed to JASCO server 
         salience_tensor = None
         drums_wav_path = None
@@ -225,22 +236,39 @@ def upload_file():
     return """
     <h1>Upload & Split Audio</h1>
     <form method="post" enctype="multipart/form-data">
-      <input type="file" name="file" accept="audio/*" required>
+      <input type="file" name="other" accept="audio/*">
       <select name="stem" required>
-        <option value="vocals">vocals</option>
-        <option value="drums">drums</option>
-        <option value="bass">bass</option>
         <option value="other">other</option>
       </select>
+      <br>
+      <input type="file" name="drums" accept="audio/*">
+      <select name="stem" required>
+        <option value="drums">drums</option>
+      </select>
+      <br>
       <button type="submit">Upload</button>
     </form>
     """
 
 # endpoint: user can download stem-split file
-# NOTE: probably won't use this anymore, tbh
-@app.route('/stems/<name>')
-def download_stem(name):
-    return send_from_directory(app.config["STEM_FOLDER"], name)
+# can implement a similar structure for generated files
+@app.route('/stems/<folder>/<name>')
+def download_stem(folder, name):
+    dir = os.path.join(app.config["STEM_FOLDER"], folder)
+    return send_from_directory(dir, name)
+
+@app.route('/stems/<folder>')
+def download_stems(folder):
+    dir = os.path.join(app.config["STEM_FOLDER"], folder)
+    filenames = os.listdir(dir)
+
+    ret = ""
+    for file in filenames:
+        ret += f"""
+        <a href={url_for('download_stem', folder=folder, name=file, _external=True)}>Download {file}</a><br>
+        """
+
+    return ret
 
 # endpoint: user can download generated file
 @app.route('/generated/<name>')
