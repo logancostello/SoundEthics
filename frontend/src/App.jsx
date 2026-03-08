@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import Navbar from "./components/Navbar";
 import AudioPlayer from "./components/AudioPlayer";
+import AttributionTable from "./components/AttributionTable";
 import { handleGenerate } from "./services/generateService";
 import "./App.css";
 
@@ -10,17 +11,17 @@ const dummySongs = {
   "Kendrick Lamar": ["HUMBLE.", "DNA.", "Alright"],
 };
 
-function songSearch(input) { 
+function songSearch(input) {
   const keys = [];
   const songs = [];
-  
+
   input = input.toLowerCase();
 
   for (const key in dummySongs) {
     if (key.toLowerCase().includes(input)) { keys.push.apply(keys, dummySongs[key]); }
     else {
       for (const song of dummySongs[key]) {
-        if (song.toLowerCase().includes(input)) { songs.push(song); } 
+        if (song.toLowerCase().includes(input)) { songs.push(song); }
       }
     }
   }
@@ -30,14 +31,15 @@ function songSearch(input) {
 
 function App() {
   const [dividerX, setDividerX] = useState(window.innerWidth / 2);
-  const [dividerY, setDividerY] = useState(window.innerHeight / 2);
+  // Pushed up to ~35% to give more vertical room for the output section
+  const [dividerY, setDividerY] = useState(window.innerHeight * 0.35);
   const [prompt, setPrompt] = useState("");
   const [dragActive, setDragActive] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTracks, setSelectedTracks] = useState([]);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [stemResult, setStemResult] = useState(null); // { audioUrl, filename }
+  const [stemResult, setStemResult] = useState(null); // { audioUrl, filename, tracks }
 
   const draggingX = useRef(false);
   const draggingY = useRef(false);
@@ -86,9 +88,13 @@ function App() {
 
   const onGenerate = () => {
     setStemResult(null);
+    // Snapshot tracks at generation time for attribution display
+    const tracksSnapshot = selectedTracks.map(t => ({ name: t.name, stem: t.stem }));
+
     handleGenerate(selectedTracks, {
       onError: setError,
-      onSuccess: (audioUrl, filename) => setStemResult({ audioUrl, filename }),
+      onSuccess: (audioUrl, filename) =>
+        setStemResult({ audioUrl, filename, tracks: tracksSnapshot }),
       onLoading: setIsLoading,
     });
   };
@@ -96,7 +102,7 @@ function App() {
   const handleFiles = (files) => {
     const newTracks = Array.from(files)
       .filter(f => !selectedTracks.some(t => t.name === f.name))
-      .map(f => ({ name: f.name, stem: "vocals", file: f }));
+      .map(f => ({ name: f.name, stem: "drums", file: f }));
     setSelectedTracks(prev => [...prev, ...newTracks]);
   };
 
@@ -104,7 +110,7 @@ function App() {
     setSelectedTracks((prev) => {
       const exists = prev.find((t) => t.name === trackName);
       if (exists) return prev.filter((t) => t.name !== trackName);
-      return [...prev, { name: trackName, stem: "vocals" }];
+      return [...prev, { name: trackName, stem: "drums" }];
     });
   };
 
@@ -147,10 +153,8 @@ function App() {
                       onChange={(e) => updateTrackStem(track.name, e.target.value)}
                       className="stem-select"
                     >
-                      <option value="vocals">Vocals</option>
                       <option value="drums">Drums</option>
-                      <option value="bass">Bass</option>
-                      <option value="other">Other</option>
+                      <option value="melody">Melody</option>
                     </select>
                     <button
                       onClick={() => removeSelectedItem(track.name)}
@@ -252,18 +256,31 @@ function App() {
           </div>
 
           {/* BOTTOM RIGHT */}
-          <div className="bottom-right">
-            <div className="section-label">Generated Output</div>
+          <div className="bottom-right" style={{ overflowY: "auto", display: "flex", flexDirection: "column", gap: 28 }}>
 
-            {isLoading && (
-              <p style={{ color: "var(--color-text-muted)", fontSize: "var(--font-size-small)" }}>
-                Splitting stems, this may take a minute...
-              </p>
-            )}
+            {/* Generated Output */}
+            <div>
+              <div className="section-label">Generated Output</div>
 
+              {isLoading && (
+                <p style={{ color: "var(--color-text-muted)", fontSize: "var(--font-size-small)" }}>
+                  Splitting stems, this may take a minute...
+                </p>
+              )}
+
+              {stemResult && !isLoading && (
+                <AudioPlayer src={stemResult.audioUrl} filename={stemResult.filename} />
+              )}
+            </div>
+
+            {/* Attribution */}
             {stemResult && !isLoading && (
-              <AudioPlayer src={stemResult.audioUrl} filename={stemResult.filename} />
+              <div>
+                <div className="section-label">Attribution</div>
+                <AttributionTable tracks={stemResult.tracks} />
+              </div>
             )}
+
           </div>
         </div>
       </div>
