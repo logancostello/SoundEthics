@@ -172,22 +172,22 @@ def upload_file():
         os.makedirs(STEM_FOLDER, exist_ok=True)
         os.makedirs(GENERATED_FOLDER, exist_ok=True)
 
-        folder_name = datetime.now().strftime("%Y%m%d-%H%M%S-%f")
-        stem_folder_path = os.path.join(app.config["STEM_FOLDER"], folder_name)
-        gen_folder_path = os.path.join(app.config["GENERATED_FOLDER"], folder_name)
+        # TODO: what happens if the user doesn't upload any files ?? got to figure that out asp
 
-        # no input validation here, should take place on frontend
-        # if 'file' not in request.files:
-             # raise ValueError("No file uploaded!")
+        # TODO: could probably just remove this tbh ...
+        # we are creating a folder based on the time, which i don't really think makes sense tbh ... 
+
+        # folder_name = datetime.now().strftime("%Y%m%d-%H%M%S-%f")
+        # stem_folder_path = os.path.join(app.config["STEM_FOLDER"], folder_name)
+        # gen_folder_path = os.path.join(app.config["GENERATED_FOLDER"], folder_name)
+
+        # dictionary of filetypes and filepaths that will be used for JASCO generation
+        split_filepaths = {}
 
         for stem_type in ['other', 'drums']:
         
             file = request.files[stem_type]
                 
-            if file.filename == '':
-                # raise ValueError("No file uploaded!")
-                # we want to allow for missing files as long as there's at least one
-                continue
             if not allowed_file(file.filename):
                 raise ValueError("File type not allowed.")
 
@@ -202,22 +202,28 @@ def upload_file():
             # save stem split to different local folder
             base_name = os.path.splitext(upload_filename)[0]  
             stem_filename = f"{base_name}_{stem_type}.wav"
-            stem_filepath = os.path.join(stem_folder_path, stem_filename)
+            stem_filepath = os.path.join(app.config["STEM_FOLDER"], stem_filename)
             demucs.api.save_audio(stem_tensor, stem_filepath, samplerate=separator.samplerate)
 
-        # now, generate audio ...
-        # TODO: any code after this has not been modified to work with multiple stems
-        # instantiate all data that will be passed to JASCO server 
+            # save the filepath in the dictionary
+            # TODO: access this later when we are passing multiple things, or something
+            split_filepaths[stem_type] = stem_filepath
+
         salience_tensor = None
         drums_wav_path = None
         drums_sample_rate = None
         url = "http://127.0.0.1:8080"
 
-        # fill in data, if it exists
-        if stem_type == "other":
-            salience_tensor = get_salience(stem_filepath)
-        elif stem_type == "drums":
-            drums_wav_path = stem_filepath
+        # fill in the data, if it exists
+        for stem_type, filepath in split_filepaths.items():
+            if stem_type == "other":
+                salience_tensor = get_salience(filepath)
+            elif stem_type == "drums":
+                drums_wav_path = filepath
+
+        # print for now, just to make sure that it's working a bit
+        print(salience_tensor)
+        print(drums_wav_path)
 
         # make call to jasco service
         resp = send_to_jasco(url, salience_tensor, 
