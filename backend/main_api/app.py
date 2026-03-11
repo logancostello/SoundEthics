@@ -172,42 +172,39 @@ def upload_file():
         os.makedirs(STEM_FOLDER, exist_ok=True)
         os.makedirs(GENERATED_FOLDER, exist_ok=True)
 
-        # TODO: what happens if the user doesn't upload any files ?? got to figure that out asp
-
-        # TODO: could probably just remove this tbh ...
-        # we are creating a folder based on the time, which i don't really think makes sense tbh ... 
-
-        # folder_name = datetime.now().strftime("%Y%m%d-%H%M%S-%f")
-        # stem_folder_path = os.path.join(app.config["STEM_FOLDER"], folder_name)
-        # gen_folder_path = os.path.join(app.config["GENERATED_FOLDER"], folder_name)
-
         # dictionary of filetypes and filepaths that will be used for JASCO generation
         split_filepaths = {}
 
         for stem_type in ['other', 'drums']:
-        
-            file = request.files[stem_type]
-                
-            if not allowed_file(file.filename):
-                raise ValueError("File type not allowed.")
+            file = request.files.get(stem_type)
 
-            # upload the original file to local folder
-            upload_filename = secure_filename(file.filename)
-            upload_filepath = os.path.join(app.config['UPLOAD_FOLDER'], upload_filename)
-            file.save(upload_filepath)
+            # should only be able to submit one file
+            if file and file.filename:
+                if not allowed_file(file.filename):
+                    raise ValueError("File type not allowed.")
 
-            # read original file from new folder, call stem split
-            stem_tensor = split_audio(upload_filepath, stem_type)
+                # upload the original file to local folder
+                upload_filename = secure_filename(file.filename)
+                upload_filepath = os.path.join(app.config['UPLOAD_FOLDER'], upload_filename)
+                file.save(upload_filepath)
 
-            # save stem split to different local folder
-            base_name = os.path.splitext(upload_filename)[0]  
-            stem_filename = f"{base_name}_{stem_type}.wav"
-            stem_filepath = os.path.join(app.config["STEM_FOLDER"], stem_filename)
-            demucs.api.save_audio(stem_tensor, stem_filepath, samplerate=separator.samplerate)
+                # read original file from new folder, call stem split
+                stem_tensor = split_audio(upload_filepath, stem_type)
 
-            # save the filepath in the dictionary
-            # TODO: access this later when we are passing multiple things, or something
-            split_filepaths[stem_type] = stem_filepath
+                # save stem split to different local folder
+                base_name = os.path.splitext(upload_filename)[0]  
+                stem_filename = f"{base_name}_{stem_type}.wav"
+                stem_filepath = os.path.join(app.config["STEM_FOLDER"], stem_filename)
+                demucs.api.save_audio(stem_tensor, stem_filepath, samplerate=separator.samplerate)
+
+                # save the filepath in the dictionary
+                # TODO: access this later when we are passing multiple things, or something
+                split_filepaths[stem_type] = stem_filepath
+
+        # user should pass at least ONE song to generate on .. 
+        # TODO: not sure if we should continue to enforce this ... what if user just wants to use description?
+        if not split_filepaths: 
+            raise ValueError("No conditioning files provided")
 
         salience_tensor = None
         drums_wav_path = None
@@ -220,10 +217,6 @@ def upload_file():
                 salience_tensor = get_salience(filepath)
             elif stem_type == "drums":
                 drums_wav_path = filepath
-
-        # print for now, just to make sure that it's working a bit
-        print(salience_tensor)
-        print(drums_wav_path)
 
         # make call to jasco service
         resp = send_to_jasco(url, salience_tensor, 
