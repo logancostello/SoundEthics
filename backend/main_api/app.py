@@ -32,7 +32,7 @@ app.config['GENERATED_FOLDER'] = STEM_FOLDER
 
 # only allow certain files to be uploaded
 ALLOWED_EXTENSIONS = {'wav', 'mp3'}
-ALLOWED_STEMS = {"drums", "bass", "vocals", "other"}
+ALLOWED_STEMS = {"drums", "melody"}
 
 # initialize stem-splitter with default parameters
 separator = demucs.api.Separator()
@@ -53,12 +53,16 @@ def allowed_file(filename):
 # returns torch.Tensor representation of stem split
 def split_audio(audio_path, desired_stem):
     if desired_stem not in ALLOWED_STEMS:
-        raise ValueError("Desired Stem should be one of: drums, bass, vocals, other")
+        raise ValueError("Desired Stem should be one of: drums, melody")
     
     origin, separated = separator.separate_audio_file(audio_path)
 
     for stem, source in separated.items():
         if stem == desired_stem: 
+            return source
+        # TODO: this is kind of wack but will work for now ... the problem is that 
+        # Demucs will return "other" when we really mean "melody"
+        elif stem == "other" and desired_stem == "melody":
             return source
     
     raise ValueError("Something went wrong when splitting audio!")
@@ -86,9 +90,7 @@ def convert_crepe_to_jasco(activation, target_bins=53, target_frames=500):
     S = S.unsqueeze(0).unsqueeze(0)
     S = F.interpolate(S, size=(target_bins, target_frames), mode="bilinear", align_corners=False)
     S = S.squeeze(0).squeeze(0)  
-
-    # TODO: could round some values eventually to get better output, if we want ..
-
+    
     return S   
 
 # given audio filepath, returns salience representation as PyTorch tensor
@@ -175,7 +177,7 @@ def upload_file():
         # dictionary of filetypes and filepaths that will be used for JASCO generation
         split_filepaths = {}
 
-        for stem_type in ['other', 'drums']:
+        for stem_type in ['melody', 'drums']:
             file = request.files.get(stem_type)
 
             # should only be able to submit one file
@@ -197,8 +199,7 @@ def upload_file():
                 stem_filepath = os.path.join(app.config["STEM_FOLDER"], stem_filename)
                 demucs.api.save_audio(stem_tensor, stem_filepath, samplerate=separator.samplerate)
 
-                # save the filepath in the dictionary
-                # TODO: access this later when we are passing multiple things, or something
+                # save the stem type & filepath to use both for JASCO conditioning
                 split_filepaths[stem_type] = stem_filepath
 
         # user should pass at least ONE song to generate on .. 
@@ -213,7 +214,7 @@ def upload_file():
 
         # fill in the data, if it exists
         for stem_type, filepath in split_filepaths.items():
-            if stem_type == "other":
+            if stem_type == "melody":
                 salience_tensor = get_salience(filepath)
             elif stem_type == "drums":
                 drums_wav_path = filepath
@@ -235,9 +236,9 @@ def upload_file():
     return """
     <h1>Upload & Split Audio</h1>
     <form method="post" enctype="multipart/form-data">
-      <input type="file" name="other" accept="audio/*">
+      <input type="file" name="melody" accept="audio/*">
       <select name="stem" required>
-        <option value="other">other</option>
+        <option value="melody">melody</option>
       </select>
       <br>
       <input type="file" name="drums" accept="audio/*">
