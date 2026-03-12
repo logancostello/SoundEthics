@@ -1,7 +1,8 @@
-from flask import Flask, request, flash, redirect, url_for, send_from_directory
+from flask import Flask, request, flash, redirect, url_for, send_from_directory, jsonify
 from werkzeug.utils import secure_filename
 import torch.nn.functional as F
 from scipy.io import wavfile
+from flask_cors import CORS
 from io import BytesIO
 import numpy as np
 import demucs.api
@@ -19,6 +20,7 @@ SETUP
 '''
 
 app = Flask(__name__)
+CORS(app)
 
 # define locations for uploaded, stem-split, and generated content
 UPLOAD_FOLDER = 'uploaded_content/'
@@ -28,7 +30,7 @@ STEM_FOLDER = "stem_content/"
 app.config['STEM_FOLDER'] = STEM_FOLDER
 
 GENERATED_FOLDER = "generated/"
-app.config['GENERATED_FOLDER'] = STEM_FOLDER
+app.config['GENERATED_FOLDER'] = GENERATED_FOLDER
 
 # only allow certain files to be uploaded
 ALLOWED_EXTENSIONS = {'wav', 'mp3'}
@@ -90,7 +92,7 @@ def convert_crepe_to_jasco(activation, target_bins=53, target_frames=500):
     S = S.unsqueeze(0).unsqueeze(0)
     S = F.interpolate(S, size=(target_bins, target_frames), mode="bilinear", align_corners=False)
     S = S.squeeze(0).squeeze(0)  
-    
+
     return S   
 
 # given audio filepath, returns salience representation as PyTorch tensor
@@ -149,6 +151,24 @@ def send_to_jasco(jasco_url, salience_tensor = None, drums_wav_path = None, drum
 
     return resp
 
+# given file and stem type, stem-split the file and save the output
+# returns the filepath to the stem
+def split_and_save(file, stem_type):
+    # upload the original file to local folder
+    upload_filename = secure_filename(file.filename)
+    upload_filepath = os.path.join(app.config['UPLOAD_FOLDER'], upload_filename)
+    file.save(upload_filepath)
+
+    # read original file from new folder, call stem split
+    stem_tensor = split_audio(upload_filepath, stem_type)
+
+    # save stem split to different local folder
+    base_name = os.path.splitext(upload_filename)[0]  
+    stem_filename = f"{base_name}_{stem_type}.wav"
+    stem_filepath = os.path.join(app.config["STEM_FOLDER"], stem_filename)
+    demucs.api.save_audio(stem_tensor, stem_filepath, samplerate=separator.samplerate)
+
+    return stem_filepath
 '''
 ---------
 ENDPOINTS
@@ -177,30 +197,59 @@ def upload_file():
         # dictionary of filetypes and filepaths that will be used for JASCO generation
         split_filepaths = {}
 
-        for stem_type in ['melody', 'drums']:
-            file = request.files.get(stem_type)
+        # TODO: restructure this whole thing, I think
+        file1 = request.files.get('file1')
+        stem1 = request.form.get("stem1")
+        file2 = request.files.get('file2')
+        stem2 = request.form.get("stem2")
 
-            # should only be able to submit one file
-            if file and file.filename:
-                if not allowed_file(file.filename):
-                    raise ValueError("File type not allowed.")
+        # raise error if no file provided
+        if not file1 and not file2: 
+            raise ValueError("No conditioning files provided")
+        
+        # process file1 if it exists
+        if file1 and file1.filename:
+            if not allowed_file(file1.filename):
+                raise ValueError("File type not allowed.")
+            if stem1 not in ALLOWED_STEMS:
+                print(f"type: {stem1}")
+                raise ValueError("Stem type not allowed.")
+            stem_filepath = split_and_save(file1, stem1)
+            split_filepaths[stem1] = stem_filepath
 
-                # upload the original file to local folder
-                upload_filename = secure_filename(file.filename)
-                upload_filepath = os.path.join(app.config['UPLOAD_FOLDER'], upload_filename)
-                file.save(upload_filepath)
+        # process file2 if it exists
+        if file2 and file2.filename:
+            if not allowed_file(file2.filename):
+                raise ValueError("File type not allowed.")
+            if stem2 not in ALLOWED_STEMS:
+                raise ValueError("Stem type not allowed.")
+            stem_filepath = split_and_save(file2, stem2)
+            split_filepaths[stem1] = stem_filepath
 
-                # read original file from new folder, call stem split
-                stem_tensor = split_audio(upload_filepath, stem_type)
+        # for stem_type in ['other', 'drums']:
+        #     file = request.files.get(stem_type)
 
-                # save stem split to different local folder
-                base_name = os.path.splitext(upload_filename)[0]  
-                stem_filename = f"{base_name}_{stem_type}.wav"
-                stem_filepath = os.path.join(app.config["STEM_FOLDER"], stem_filename)
-                demucs.api.save_audio(stem_tensor, stem_filepath, samplerate=separator.samplerate)
+        #     # should only be able to submit one file
+        #     if file and file.filename:
+        #         if not allowed_file(file.filename):
+        #             raise ValueError("File type not allowed.")
+        
+        #         # upload the original file to local folder
+        #         upload_filename = secure_filename(file.filename)
+        #         upload_filepath = os.path.join(app.config['UPLOAD_FOLDER'], upload_filename)
+        #         file.save(upload_filepath)
 
-                # save the stem type & filepath to use both for JASCO conditioning
-                split_filepaths[stem_type] = stem_filepath
+        #         # read original file from new folder, call stem split
+        #         stem_tensor = split_audio(upload_filepath, stem_type)
+
+        #         # save stem split to different local folder
+        #         base_name = os.path.splitext(upload_filename)[0]  
+        #         stem_filename = f"{base_name}_{stem_type}.wav"
+        #         stem_filepath = os.path.join(app.config["STEM_FOLDER"], stem_filename)
+        #         demucs.api.save_audio(stem_tensor, stem_filepath, samplerate=separator.samplerate)
+
+        #         # save the stem type & filepath to use both for JASCO conditioning
+        #         split_filepaths[stem_type] = stem_filepath
 
         # user should pass at least ONE song to generate on .. 
         # TODO: not sure if we should continue to enforce this ... what if user just wants to use description?
@@ -222,7 +271,7 @@ def upload_file():
         # make call to jasco service
         resp = send_to_jasco(url, salience_tensor, 
                       drums_wav_path, drums_sample_rate, description="upbeat hip-hop song with strong drums")
-        
+                          
         # save what's generated by writing to local folder
         wav_bytes = resp.content
         generated_filepath = os.path.join(app.config['GENERATED_FOLDER'], "generated.wav")
@@ -232,23 +281,28 @@ def upload_file():
             f.write(wav_bytes)
 
         # redirect to page with generated audio
-        return redirect(url_for('download_generated', name="generated.wav"))
+        # NOTE: for testing locally (server-only)
+        # return redirect(url_for('download_generated', name="generated.wav"))
+        # NOTE: for testing with frontend
+        return jsonify({"url": f"/generated/{os.path.basename(generated_filepath)}"})
     return """
-    <h1>Upload & Split Audio</h1>
-    <form method="post" enctype="multipart/form-data">
-      <input type="file" name="melody" accept="audio/*">
-      <select name="stem" required>
-        <option value="melody">melody</option>
-      </select>
-      <br>
-      <input type="file" name="drums" accept="audio/*">
-      <select name="stem" required>
-        <option value="drums">drums</option>
-      </select>
-      <br>
-      <button type="submit">Upload</button>
-    </form>
-    """
+        <h1>Upload & Split Audio</h1>
+        <form method="post" enctype="multipart/form-data">
+        <input type="file" name="file1" accept="audio/*">
+        <select name="stem1" required>
+            <option value="drums">drums</option>
+            <option value="melody">melody</option>
+        </select>
+        <br>
+        <input type="file" name="file2" accept="audio/*">
+        <select name="stem2" required>
+            <option value="drums">drums</option>
+            <option value="melody">melody</option>
+        </select>
+        <br>
+        <button type="submit">Upload</button>
+        </form>
+        """
 
 # endpoint: user can download stem-split file
 # can implement a similar structure for generated files
@@ -271,7 +325,8 @@ def download_stems(folder):
     return ret
 
 # endpoint: user can download generated file
-@app.route('/generated/<name>')
+# @app.route('/generated/<name>')
+@app.route("/generated/<name>")
 def download_generated(name):
     return send_from_directory(app.config["GENERATED_FOLDER"], name)
 

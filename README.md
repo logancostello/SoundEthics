@@ -2,13 +2,12 @@
 
 Conditioning generative music models on audio stems. 
 
-Initial Setup: 
-- create virtual environment with Python version 3.9.25
+To setup and run frontend: 
+- create a virtual environment with Python version 3.9.25
+- activate virtual environment
 - ```pip install -r requirements.txt```
-
-To run frontend: 
 - ```cd frontend```
-- ```python app.py```
+- ```npm run dev```
 
 To setup and run backend: 
 - create two virtual environments, each with Python version 3.9.25
