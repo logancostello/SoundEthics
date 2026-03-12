@@ -2,6 +2,8 @@
 
 Conditioning generative music models on audio stems. 
 
+Model architecture based on SonyAI's Attribution-by-design. [Paper Link.](https://arxiv.org/abs/2510.08062)
+
 Initial Setup: 
 - create virtual environment with Python version 3.9.25
 - ```pip install -r requirements.txt```
