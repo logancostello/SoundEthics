@@ -1,4 +1,5 @@
-const BACKEND_URL = "http://127.0.0.1:5000";
+// const BACKEND_URL = "http://127.0.0.1:5000";
+const BACKEND_URL = "";
 
 /*
   handleGenerate
@@ -14,12 +15,8 @@ export async function handleGenerate(selectedTracks, { onError, onSuccess, onLoa
     return;
   }
 
-  if (selectedTracks.length > 1) {
-    onError("Only one track can be processed at a time. Please remove extras from your selection.");
-    return;
-  }
-
   const track = selectedTracks[0];
+  console.log("Track:", track);
 
   if (!track.file) {
     onError(`"${track.name}" is a search result, not an uploaded file. Please upload an audio file to use Generate.`);
@@ -28,8 +25,15 @@ export async function handleGenerate(selectedTracks, { onError, onSuccess, onLoa
 
   // build request
   const formData = new FormData();
-  formData.append("file", track.file);
-  formData.append("stem", track.stem);
+  const track1 = selectedTracks[0];
+  formData.append("file1", track1.file);
+  formData.append("stem1", track1.stem);
+
+  if (selectedTracks.length === 2) {
+    const track2 = selectedTracks[1];
+    formData.append("file2", track2.file);
+    formData.append("stem2", track2.stem);
+  }
 
   onLoading(true);
   onError(null);
@@ -37,7 +41,7 @@ export async function handleGenerate(selectedTracks, { onError, onSuccess, onLoa
   try {
     // POST to upload and split
     console.log("Step 1: sending POST...");
-    const response = await fetch(`${BACKEND_URL}/upload_file`, {
+    const response = await fetch(`/api/upload_file`, {
       method: "POST",
       body: formData,
     });
@@ -52,7 +56,8 @@ export async function handleGenerate(selectedTracks, { onError, onSuccess, onLoa
     console.log("Step 3: got JSON:", data);
 
     // fetch the actual audio file from the returned URL
-    const fileResponse = await fetch(data.url);
+    // const fileResponse = await fetch(data.url);
+    const fileResponse = await fetch(`/api${data.url}`);
     console.log("Step 4: file fetch status:", fileResponse.status);
 
     if (!fileResponse.ok) {
