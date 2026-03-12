@@ -3,6 +3,7 @@ from werkzeug.utils import secure_filename
 from audiocraft.models import JASCO
 from huggingface_hub import login
 from dotenv import load_dotenv
+from flask_cors import CORS
 from io import BytesIO
 import torchaudio
 import requests
@@ -17,6 +18,7 @@ SETUP
 '''
 
 app = Flask(__name__)
+CORS(app)
 
 # log into hugging face since the model is gated
 # NOTE: this will require generating your own token and saving in .env file at root
