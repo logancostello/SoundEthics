@@ -7,7 +7,6 @@ Model architecture based on SonyAI's Attribution-by-design. [Paper Link.](https:
 To setup and run frontend: 
 - create a virtual environment with Python version 3.9.25
 - activate virtual environment
->>>>>>> 2f1c44b33032a79d19e1bc139a801b7fc75aad4b
 - ```pip install -r requirements.txt```
 - ```cd frontend```
 - ```npm run dev```
