@@ -15,6 +15,5 @@ To setup and run backend:
 - create one virtual environments, each with Python version 3.9.25
 - activate the virtual environment:
     - ```cd backend```
-    - ```cd main_api```
     - ```pip install requirements.txt```
-    - ```python app.py```
+    - ```python main.py```
