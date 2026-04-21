@@ -2,3 +2,4 @@ __pycache__/
 stem_content/
 uploaded_content/
 .python-version
+generated/

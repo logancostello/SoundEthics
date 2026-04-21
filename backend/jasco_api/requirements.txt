@@ -5,7 +5,7 @@ antlr4-python3-runtime==4.9.3
 anyio==4.12.1
 appnope==0.1.4
 asttokens==3.0.1
--e git+https://github.com/irwinj22/audiocraft.git@90177d76c960dbc6c4b89fe5ddf3e84e53780841#egg=audiocraft
+-e git+https://github.com/facebookresearch/audiocraft#egg=audiocraft
 audioread==3.1.0
 av==11.0.0
 blinker==1.9.0
