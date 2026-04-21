@@ -1,13 +1,15 @@
 import os
+import uuid
 from typing import Optional
 import demucs.api
 from werkzeug.utils import secure_filename
 
-# Demucs maps "melody" to its internal "other" stem.
-STEM_ALIASES = {"melody": "other"}
-
 # Initialized once at import time so the model isn't reloaded per request.
 _separator = demucs.api.Separator()
+
+# Demucs returns stems under its own internal names (e.g. "other").
+# This maps those internal names to the app's stem names.
+DEMUCS_TO_APP = {"other": "melody"}
 
 
 def split_stem(audio_path: str, desired_stem: str):
@@ -24,27 +26,31 @@ def split_stem(audio_path: str, desired_stem: str):
     Raises:
         ValueError: If the stem is not found in Demucs output.
     """
-    demucs_stem = STEM_ALIASES.get(desired_stem, desired_stem)
     _, separated = _separator.separate_audio_file(audio_path)
 
-    if demucs_stem not in separated:
+    # Remap Demucs internal names to app names before searching.
+    renamed = {DEMUCS_TO_APP.get(k, k): v for k, v in separated.items()}
+
+    if desired_stem not in renamed:
         raise ValueError(
-            f"Stem '{desired_stem}' (mapped to '{demucs_stem}') not found in Demucs output. "
-            f"Available: {list(separated.keys())}"
+            f"Stem '{desired_stem}' not found. Available: {list(renamed.keys())}"
         )
 
-    return separated[demucs_stem]
+    return renamed[desired_stem]
 
 
 def save_stem(stem_tensor, stem_name: str, stem_folder: str, base_name: str) -> str:
     """
     Write a stem tensor to disk as a .wav file.
+    A short unique suffix is appended to avoid collisions when the same
+    stem type is submitted more than once.
 
     Returns:
         The full path to the saved stem file.
     """
     os.makedirs(stem_folder, exist_ok=True)
-    filename = f"{base_name}_{stem_name}.wav"
+    unique_suffix = uuid.uuid4().hex[:8]
+    filename = f"{base_name}_{stem_name}_{unique_suffix}.wav"
     filepath = os.path.join(stem_folder, filename)
     demucs.api.save_audio(stem_tensor, filepath, samplerate=_separator.samplerate)
     return filepath

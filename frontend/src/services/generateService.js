@@ -15,31 +15,25 @@ export async function handleGenerate(selectedTracks, { onError, onSuccess, onLoa
     return;
   }
 
-  const track = selectedTracks[0];
-  console.log("Track:", track);
-
-  if (!track.file) {
-    onError(`"${track.name}" is a search result, not an uploaded file. Please upload an audio file to use Generate.`);
+  const hasUploadedFile = selectedTracks.some(track => track.file);
+  if (!hasUploadedFile) {
+    onError("All selected tracks are search results. Please upload at least one audio file to use Generate.");
     return;
   }
 
-  // build request
+  // build request — append each track as "files" / "stems" so the backend
+  // receives parallel lists regardless of how many tracks are selected
   const formData = new FormData();
-  const track1 = selectedTracks[0];
-  formData.append("file1", track1.file);
-  formData.append("stem1", track1.stem);
-
-  if (selectedTracks.length === 2) {
-    const track2 = selectedTracks[1];
-    formData.append("file2", track2.file);
-    formData.append("stem2", track2.stem);
+  for (const track of selectedTracks) {
+    if (!track.file) continue; // skip search results
+    formData.append("files", track.file);
+    formData.append("stems", track.stem);
   }
 
   onLoading(true);
   onError(null);
 
   try {
-    // POST to upload and split
     console.log("Step 1: sending POST...");
     const response = await fetch(`/api/upload_file`, {
       method: "POST",
@@ -47,27 +41,30 @@ export async function handleGenerate(selectedTracks, { onError, onSuccess, onLoa
     });
 
     if (!response.ok) {
-      throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `Server returned ${response.status}: ${response.statusText}`);
     }
 
-    // Flask returns { url: "http://127.0.0.1:5000/stems/<filename>" }
     console.log("Step 2: POST response status:", response.status);
     const data = await response.json();
     console.log("Step 3: got JSON:", data);
 
-    // fetch the actual audio file from the returned URL
-    // const fileResponse = await fetch(data.url);
     const fileResponse = await fetch(`/api${data.url}`);
     console.log("Step 4: file fetch status:", fileResponse.status);
 
     if (!fileResponse.ok) {
-      throw new Error("Failed to fetch stem file.");
+      throw new Error("Failed to fetch generated file.");
     }
 
     const blob = await fileResponse.blob();
     const audioUrl = URL.createObjectURL(blob);
-    const baseName = track.name.replace(/\.[^/.]+$/, "");
-    const filename = `${baseName}_${track.stem}.wav`;
+
+    // build a filename from all selected track names and stems
+    const label = selectedTracks
+      .filter(t => t.file)
+      .map(t => `${t.name.replace(/\.[^/.]+$/, "")}_${t.stem}`)
+      .join("+");
+    const filename = `${label}.wav`;
 
     onSuccess(audioUrl, filename);
   } catch (err) {

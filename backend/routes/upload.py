@@ -7,54 +7,48 @@ import config
 
 upload_bp = Blueprint("upload", __name__)
 
-# Each slot maps a request field name to its stem-type field name.
-FILE_SLOTS = [
-    ("file1", "stem1"),
-    ("file2", "stem2"),
-]
-
 
 @upload_bp.post("/upload_file")
 def upload_file():
     """
-    Accept up to two audio files with associated stem types, stem-split each,
-    mix the results, and return a URL to the generated file.
+    Accept any number of audio files with associated stem types, stem-split
+    each, mix all results together, and return a URL to the generated file.
 
-    Form fields:
-        file1 / stem1  — first audio file and its stem type
-        file2 / stem2  — (optional) second audio file and its stem type
+    Form fields (repeat as many times as needed):
+        files  — audio file(s)
+        stems  — stem type for each corresponding file ("drums" | "melody")
 
-    Stem types: "drums" | "melody"
+    The nth file is paired with the nth stem. Duplicates of the same stem
+    type are allowed and will all be mixed together.
     """
     os.makedirs(config.UPLOAD_FOLDER, exist_ok=True)
     os.makedirs(config.STEM_FOLDER, exist_ok=True)
     os.makedirs(config.GENERATED_FOLDER, exist_ok=True)
 
-    stem_paths: dict[str, str] = {}
+    files = request.files.getlist("files")
+    stems = request.form.getlist("stems")
 
-    for file_field, stem_field in FILE_SLOTS:
-        file = request.files.get(file_field)
-        stem = request.form.get(stem_field, "")
+    if not files or not any(f.filename for f in files):
+        return jsonify({"error": "At least one audio file is required."}), 400
 
-        # Skip empty slots silently — only one file is required.
-        if not file or not file.filename:
-            continue
+    if len(files) != len(stems):
+        return jsonify({"error": f"Got {len(files)} file(s) but {len(stems)} stem type(s). They must match."}), 400
 
+    stem_paths = []
+
+    for file, stem in zip(files, stems):
         error = validate_file_and_stem(file, stem)
         if error:
             return jsonify({"error": error}), 400
 
-        # Last write wins if the same stem type is submitted twice.
-        stem_paths[stem] = process_upload(
+        stem_path = process_upload(
             file, stem,
             upload_folder=config.UPLOAD_FOLDER,
             stem_folder=config.STEM_FOLDER,
         )
-
-    if not stem_paths:
-        return jsonify({"error": "At least one valid audio file is required."}), 400
+        stem_paths.append(stem_path)
 
     output_path = os.path.join(config.GENERATED_FOLDER, config.GENERATED_FILENAME)
-    combine_wavs(list(stem_paths.values()), output_path)
+    combine_wavs(stem_paths, output_path)
 
     return jsonify({"url": f"/generated/{config.GENERATED_FILENAME}"})
