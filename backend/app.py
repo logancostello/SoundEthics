@@ -7,6 +7,55 @@ import os
 import librosa
 import soundfile as sf
 
+import requests
+import time
+import os
+import urllib.parse
+
+ACESTEP_URL = "http://localhost:8001"
+
+def generate_with_ace(audio_path: str, prompt: str) -> str:
+    payload = {
+        "prompt": prompt,
+        "audio_path": os.path.abspath(audio_path),
+        "task": "cover",
+        "thinking": False,        # no LLM
+        "bpm": 90,
+        "key_scale": "C Major",
+        "time_signature": "4",
+        "duration": 30.0,
+        "num_inference_steps": 8,
+        "seed": -1,
+        "audio_format": "wav",
+    }
+    resp = requests.post(f"{ACESTEP_URL}/release_task", json=payload)
+    resp.raise_for_status()
+    task_id = resp.json()["data"]["task_id"]
+
+    for _ in range(120):
+        time.sleep(2)
+        poll = requests.post(f"{ACESTEP_URL}/query_result", json={"task_id_list": [task_id]})
+        results = poll.json()["data"]
+        if not results:
+            continue
+        result = results[0]
+        if result["status"] == 1:
+            import json
+            result_data = json.loads(result["result"])[0]
+
+            audio_file_path = urllib.parse.unquote(result_data["file"].split("path=")[-1])
+            audio = requests.get(f"{ACESTEP_URL}/v1/audio?path={urllib.parse.quote(audio_file_path, safe='/')}")
+
+            out_path = "generated/ace_output.wav"
+            os.makedirs("generated", exist_ok=True)
+            with open(out_path, "wb") as f:
+                f.write(audio.content)
+            return out_path
+        elif result["status"] == -1:
+            raise RuntimeError(f"ACE-Step failed: {result.get('result')}")
+
+    raise TimeoutError("ACE-Step timed out after 4 minutes")
+
 
 '''
 -----
@@ -165,16 +214,29 @@ def upload_file():
             valid_files.append(melody_wav_path)
             print("melody")
 
-        combine_wavs(
-            valid_files,
-            generated_filepath
-        )
+        combined_filepath = os.path.join(app.config['GENERATED_FOLDER'], "combined.wav")
 
-        # redirect to page with generated audio
-        # NOTE: for testing locally (server-only)
-        # return redirect(url_for('download_generated', name="generated.wav"))
-        # NOTE: for testing with frontend
-        return jsonify({"url": f"/generated/{os.path.basename(generated_filepath)}"})
+        generated_stems = []
+
+        for stem_type, stem_filepath in split_filepaths.items():
+            # generate a full song conditioned on this stem
+            generated_song_path = generate_with_ace(stem_filepath, "lofi hip hop, chill, relaxing, vinyl warmth")
+
+            # re-split the generated song to isolate the same instrument
+            resplit_tensor = split_audio(generated_song_path, stem_type)
+
+            # save the resplit stem
+            resplit_filename = f"generated_{stem_type}.wav"
+            resplit_filepath = os.path.join(app.config['GENERATED_FOLDER'], resplit_filename)
+            demucs.api.save_audio(resplit_tensor, resplit_filepath, samplerate=separator.samplerate)
+
+            generated_stems.append(resplit_filepath)
+
+        combine_wavs(generated_stems, combined_filepath)
+
+        return jsonify({"url": f"/generated/{os.path.basename(combined_filepath)}"})
+
+
     return """
         <h1>Upload & Split Audio</h1>
         <form method="post" enctype="multipart/form-data">
