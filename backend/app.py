@@ -214,23 +214,28 @@ def upload_file():
             valid_files.append(melody_wav_path)
             print("melody")
 
-        # combine_wavs(
-        #     valid_files,
-        #     generated_filepath
-        # )
-
-        # # redirect to page with generated audio
-        # # NOTE: for testing locally (server-only)
-        # # return redirect(url_for('download_generated', name="generated.wav"))
-        # # NOTE: for testing with frontend
-        # return jsonify({"url": f"/generated/{os.path.basename(generated_filepath)}"})
-
         combined_filepath = os.path.join(app.config['GENERATED_FOLDER'], "combined.wav")
-        combine_wavs(valid_files, combined_filepath)
 
-        generated_filepath = generate_with_ace(combined_filepath, "lofi hip hop, chill, relaxing, vinyl warmth")
+        generated_stems = []
 
-        return jsonify({"url": f"/generated/{os.path.basename(generated_filepath)}"})
+        for stem_type, stem_filepath in split_filepaths.items():
+            # generate a full song conditioned on this stem
+            generated_song_path = generate_with_ace(stem_filepath, "lofi hip hop, chill, relaxing, vinyl warmth")
+
+            # re-split the generated song to isolate the same instrument
+            resplit_tensor = split_audio(generated_song_path, stem_type)
+
+            # save the resplit stem
+            resplit_filename = f"generated_{stem_type}.wav"
+            resplit_filepath = os.path.join(app.config['GENERATED_FOLDER'], resplit_filename)
+            demucs.api.save_audio(resplit_tensor, resplit_filepath, samplerate=separator.samplerate)
+
+            generated_stems.append(resplit_filepath)
+
+        combine_wavs(generated_stems, combined_filepath)
+
+        return jsonify({"url": f"/generated/{os.path.basename(combined_filepath)}"})
+
 
     return """
         <h1>Upload & Split Audio</h1>
