@@ -14,48 +14,6 @@ import urllib.parse
 
 ACESTEP_URL = "http://localhost:8001"
 
-def generate_with_ace(audio_path: str, prompt: str) -> str:
-    payload = {
-        "prompt": prompt,
-        "audio_path": os.path.abspath(audio_path),
-        "task": "cover",
-        "thinking": False,        # no LLM
-        "bpm": 90,
-        "key_scale": "C Major",
-        "time_signature": "4",
-        "duration": 30.0,
-        "num_inference_steps": 8,
-        "seed": -1,
-        "audio_format": "wav",
-    }
-    resp = requests.post(f"{ACESTEP_URL}/release_task", json=payload)
-    resp.raise_for_status()
-    task_id = resp.json()["data"]["task_id"]
-
-    for _ in range(120):
-        time.sleep(2)
-        poll = requests.post(f"{ACESTEP_URL}/query_result", json={"task_id_list": [task_id]})
-        results = poll.json()["data"]
-        if not results:
-            continue
-        result = results[0]
-        if result["status"] == 1:
-            import json
-            result_data = json.loads(result["result"])[0]
-
-            audio_file_path = urllib.parse.unquote(result_data["file"].split("path=")[-1])
-            audio = requests.get(f"{ACESTEP_URL}/v1/audio?path={urllib.parse.quote(audio_file_path, safe='/')}")
-
-            out_path = "generated/ace_output.wav"
-            os.makedirs("generated", exist_ok=True)
-            with open(out_path, "wb") as f:
-                f.write(audio.content)
-            return out_path
-        elif result["status"] == -1:
-            raise RuntimeError(f"ACE-Step failed: {result.get('result')}")
-
-    raise TimeoutError("ACE-Step timed out after 4 minutes")
-
 
 '''
 -----
@@ -131,6 +89,52 @@ def split_and_save(file, stem_type):
     demucs.api.save_audio(stem_tensor, stem_filepath, samplerate=separator.samplerate)
 
     return stem_filepath
+
+# given path to audio file and prompt, make request to local ACE instance and generate new track
+# TODO: need to expose the temperature to try to make something super similar to input .. 
+# guidance scale falls between 1 and 10. 1 is low simiarity and 10 is high. let's see what happens when similarity is 19
+def generate_with_ace(audio_path: str, prompt: str) -> str:
+    payload = {
+        "prompt": prompt,
+        "audio_path": os.path.abspath(audio_path),
+        "task": "cover",
+        "thinking": False,        # no LLM
+        "bpm": 90,
+        "key_scale": "C Major",
+        "time_signature": "4",
+        "duration": 30.0,
+        "num_inference_steps": 8,
+        "guidance_scale": 5.0,
+        "seed": -1,
+        "audio_format": "wav",
+    }
+    resp = requests.post(f"{ACESTEP_URL}/release_task", json=payload)
+    resp.raise_for_status()
+    task_id = resp.json()["data"]["task_id"]
+
+    for _ in range(120):
+        time.sleep(2)
+        poll = requests.post(f"{ACESTEP_URL}/query_result", json={"task_id_list": [task_id]})
+        results = poll.json()["data"]
+        if not results:
+            continue
+        result = results[0]
+        if result["status"] == 1:
+            import json
+            result_data = json.loads(result["result"])[0]
+
+            audio_file_path = urllib.parse.unquote(result_data["file"].split("path=")[-1])
+            audio = requests.get(f"{ACESTEP_URL}/v1/audio?path={urllib.parse.quote(audio_file_path, safe='/')}")
+
+            out_path = "generated/ace_output.wav"
+            os.makedirs("generated", exist_ok=True)
+            with open(out_path, "wb") as f:
+                f.write(audio.content)
+            return out_path
+        elif result["status"] == -1:
+            raise RuntimeError(f"ACE-Step failed: {result.get('result')}")
+
+    raise TimeoutError("ACE-Step timed out after 4 minutes")
 '''
 ---------
 ENDPOINTS
@@ -282,13 +286,10 @@ def download_stems(folder):
 def download_generated(name):
     return send_from_directory(app.config["GENERATED_FOLDER"], name)
 
-
-
 ### LIBROSA
 
 def db_to_amp(db):
     return 10 ** (db / 20.0)
-
 
 def ensure_2d(y):
     if y.ndim == 1:
