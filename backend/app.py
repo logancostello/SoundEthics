@@ -6,7 +6,8 @@ import demucs.api
 import os
 import librosa
 import soundfile as sf
-
+import pyloudnorm as pyln
+from pedalboard import Pedalboard, Compressor, HighpassFilter, Limiter
 import requests
 import time
 import os
@@ -23,7 +24,7 @@ def generate_with_ace(audio_path: str, prompt: str) -> str:
         "bpm": 90,
         "key_scale": "C Major",
         "time_signature": "4",
-        "duration": 30.0,
+        "duration": 10.0,
         "num_inference_steps": 8,
         "seed": -1,
         "audio_format": "wav",
@@ -322,23 +323,42 @@ def peak_normalize_with_headroom(y, headroom_db=-1.0):
     return y * (target_peak / peak)
 
 
+def lufs_normalize(y, sr, target_lufs=-23.0):
+    """Normalize a stem to a target LUFS level."""
+    meter = pyln.Meter(sr)
+    loudness = meter.integrated_loudness(y.T)
+    if np.isinf(loudness) or np.isnan(loudness):
+        return y  # silent stem, leave as-is
+    return pyln.normalize.loudness(y.T, loudness, target_lufs).T
+
+
+def master_mix(y, sr):
+    """
+    Light mastering chain — genre-agnostic cleanup only.
+    Not trying to make creative decisions, just tighten and limit.
+    """
+    board = Pedalboard([
+        HighpassFilter(cutoff_frequency_hz=40),      # remove sub-bass rumble
+        Compressor(
+            threshold_db=-18,
+            ratio=2.0,        # gentle — won't pump or color the sound
+            attack_ms=20,     # slow attack preserves transient punch
+            release_ms=250,   # smooth release works across tempos
+        ),
+        Limiter(
+            threshold_db=-1.0,    # standard headroom for streaming
+            release_ms=100,
+        ),
+    ])
+    return board(y, sr)
+
+
 def combine_wavs(
     wav_paths: list[str],
     output_path: str,
     gains_db: list[float] = None,
     master_headroom_db: float = -1.0,
 ) -> None:
-    """
-    Mix any number of .wav files together and write to output_path.
-
-    Args:
-        wav_paths:           List of paths to input .wav files.
-        output_path:         Path for the output mixed .wav file.
-        gains_db:            Optional list of gain values (in dB) per file.
-                             Must match length of wav_paths if provided.
-                             Defaults to 0 dB for all stems.
-        master_headroom_db:  Peak ceiling for the final mix (default -1.0 dB).
-    """
     if not wav_paths:
         raise ValueError("wav_paths must contain at least one file.")
 
@@ -365,7 +385,10 @@ def combine_wavs(
         # Match channels to reference
         y = match_channels(y, target_channels)
 
-        # Apply gain
+        # --- OPTION 1: LUFS normalize each stem before summing ---
+        y = lufs_normalize(y, target_sr, target_lufs=-23.0)
+
+        # Apply any additional manual gain on top
         y = y * db_to_amp(gain_db)
 
         stems.append(y)
@@ -377,8 +400,11 @@ def combine_wavs(
     # Sum all stems
     mix = np.sum(stems, axis=0)
 
-    # Peak normalize with headroom
-    mix = peak_normalize_with_headroom(mix, headroom_db=master_headroom_db)
+    # Peak normalize before mastering to give limiter a clean input
+    mix = peak_normalize_with_headroom(mix, headroom_db=-6.0)
+
+    # --- OPTION 3: Light mastering chain ---
+    mix = master_mix(mix, target_sr)
 
     # soundfile expects (samples, channels)
     sf.write(output_path, mix.T, target_sr)
