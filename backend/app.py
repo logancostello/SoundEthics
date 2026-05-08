@@ -20,9 +20,9 @@ ACESTEP_URL = os.environ.get("ACESTEP_URL")
 def generate_with_ace(audio_path, prompt, bpm, duration, inference_steps, seed):
     payload = {
         "caption": prompt,
-        "task_type": "cover",
+        "task_type": "text2music", # cover or text2music, unsure which is best
         "lyrics": "[Instrumental]",
-        "thinking": False,
+        "thinking": True,
         "bpm": bpm,
         "duration": duration,
         "inference_steps": inference_steps,
@@ -30,7 +30,7 @@ def generate_with_ace(audio_path, prompt, bpm, duration, inference_steps, seed):
         "keyscale": "C Major",
         "timesignature": "4",
         "audio_format": "wav",
-        "audio_cover_strength": 0.5,
+        "audio_cover_strength": 0.9, # todo: expose to frontend
     }
 
     with open(audio_path, "rb") as f:
