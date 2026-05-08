@@ -215,7 +215,7 @@ function App() {
 
               {isLoading && (
                 <p style={{ color: "var(--color-text-muted)", fontSize: "var(--font-size-small)" }}>
-                  Splitting stems, this may take a minute...
+                  Generating output, this may take a minute...
                 </p>
               )}
 
