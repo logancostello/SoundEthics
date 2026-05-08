@@ -2,3 +2,4 @@ __pycache__/
 generated/
 stem_content/
 uploaded_content/
+.env

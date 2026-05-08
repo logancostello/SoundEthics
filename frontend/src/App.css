@@ -294,3 +294,35 @@ body {
   flex: 1;
   padding: 28px;
 }
+
+.parameters-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.number-input {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.number-input-label {
+  font-size: var(--font-size-small);
+  color: var(--color-text-muted);
+}
+
+.number-input-field {
+  width: 100%;
+  background: var(--color-input-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  color: var(--color-text);
+  padding: 4px 8px;
+  font-size: var(--font-size-small);
+}
+
+.number-input-field::-webkit-inner-spin-button {
+  opacity: 1;
+}
