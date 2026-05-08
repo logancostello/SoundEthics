@@ -91,7 +91,7 @@ function App() {
     // Snapshot tracks at generation time for attribution display
     const tracksSnapshot = selectedTracks.map(t => ({ name: t.name, stem: t.stem }));
 
-    handleGenerate(selectedTracks, {
+    handleGenerate(selectedTracks, prompt, {
       onError: setError,
       onSuccess: (audioUrl, filename) =>
         setStemResult({ audioUrl, filename, tracks: tracksSnapshot }),

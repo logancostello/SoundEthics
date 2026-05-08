@@ -8,7 +8,7 @@ const BACKEND_URL = "";
   - onSuccess: (audioUrl: string, filename: string) => void
   - onLoading: (isLoading: bool) => void
 */
-export async function handleGenerate(selectedTracks, { onError, onSuccess, onLoading }) {
+export async function handleGenerate(selectedTracks, prompt, { onError, onSuccess, onLoading }) {
   // validation
   if (selectedTracks.length === 0) {
     onError("No tracks selected. Please upload or select a track first.");
@@ -34,6 +34,8 @@ export async function handleGenerate(selectedTracks, { onError, onSuccess, onLoa
     formData.append("file2", track2.file);
     formData.append("stem2", track2.stem);
   }
+
+  formData.append("prompt", prompt);
 
   onLoading(true);
   onError(null);

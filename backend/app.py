@@ -33,7 +33,7 @@ def generate_with_ace(audio_path: str, prompt: str) -> str:
     resp.raise_for_status()
     task_id = resp.json()["data"]["task_id"]
 
-    for _ in range(120):
+    for _ in range(240):
         time.sleep(2)
         poll = requests.post(f"{ACESTEP_URL}/query_result", json={"task_id_list": [task_id]})
         results = poll.json()["data"]
@@ -55,7 +55,7 @@ def generate_with_ace(audio_path: str, prompt: str) -> str:
         elif result["status"] == -1:
             raise RuntimeError(f"ACE-Step failed: {result.get('result')}")
 
-    raise TimeoutError("ACE-Step timed out after 4 minutes")
+    raise TimeoutError("ACE-Step timed out after 8 minutes")
 
 
 '''
@@ -165,6 +165,7 @@ def upload_file():
         stem1 = request.form.get("stem1")
         file2 = request.files.get('file2')
         stem2 = request.form.get("stem2")
+        prompt = request.form.get("prompt")
 
         # raise error if no file provided
         if not file1 and not file2: 
@@ -221,7 +222,7 @@ def upload_file():
 
         for stem_type, stem_filepath in split_filepaths.items():
             # generate a full song conditioned on this stem
-            generated_song_path = generate_with_ace(stem_filepath, "lofi hip hop, chill, relaxing, vinyl warmth")
+            generated_song_path = generate_with_ace(stem_filepath, prompt)
 
             # re-split the generated song to isolate the same instrument
             resplit_tensor = split_audio(generated_song_path, stem_type)
