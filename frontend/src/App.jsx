@@ -5,41 +5,15 @@ import AttributionTable from "./components/AttributionTable";
 import { handleGenerate } from "./services/generateService";
 import "./App.css";
 
-const dummySongs = {
-  "Taylor Swift": ["Shake it Off", "Love Story", "Blank Space"],
-  "Drake": ["God's Plan", "One Dance", "In My Feelings"],
-  "Kendrick Lamar": ["HUMBLE.", "DNA.", "Alright"],
-};
-
-function songSearch(input) {
-  const keys = [];
-  const songs = [];
-
-  input = input.toLowerCase();
-
-  for (const key in dummySongs) {
-    if (key.toLowerCase().includes(input)) { keys.push.apply(keys, dummySongs[key]); }
-    else {
-      for (const song of dummySongs[key]) {
-        if (song.toLowerCase().includes(input)) { songs.push(song); }
-      }
-    }
-  }
-
-  return keys.concat(songs);
-}
-
 function App() {
   const [dividerX, setDividerX] = useState(window.innerWidth / 2);
-  // Pushed up to ~35% to give more vertical room for the output section
   const [dividerY, setDividerY] = useState(window.innerHeight * 0.35);
   const [prompt, setPrompt] = useState("");
   const [dragActive, setDragActive] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
   const [selectedTracks, setSelectedTracks] = useState([]);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [stemResult, setStemResult] = useState(null); // { audioUrl, filename, tracks }
+  const [stemResult, setStemResult] = useState(null);
 
   const draggingX = useRef(false);
   const draggingY = useRef(false);
@@ -88,7 +62,6 @@ function App() {
 
   const onGenerate = () => {
     setStemResult(null);
-    // Snapshot tracks at generation time for attribution display
     const tracksSnapshot = selectedTracks.map(t => ({ name: t.name, stem: t.stem }));
 
     handleGenerate(selectedTracks, prompt, {
@@ -106,14 +79,6 @@ function App() {
     setSelectedTracks(prev => [...prev, ...newTracks]);
   };
 
-  const toggleTrack = (trackName) => {
-    setSelectedTracks((prev) => {
-      const exists = prev.find((t) => t.name === trackName);
-      if (exists) return prev.filter((t) => t.name !== trackName);
-      return [...prev, { name: trackName, stem: "drums" }];
-    });
-  };
-
   const removeSelectedItem = (name) => {
     setSelectedTracks((prev) => prev.filter((t) => t.name !== name));
   };
@@ -124,7 +89,6 @@ function App() {
     );
   };
 
-  const searchResults = songSearch(searchQuery) || [];
   const hasSelections = selectedTracks.length > 0;
 
   return (
@@ -193,34 +157,6 @@ function App() {
             </div>
           </div>
 
-          {/* Search */}
-          <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
-            <div className="section-label">Search Songs</div>
-
-            <input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search"
-              className="search-input"
-            />
-
-            <div className="search-results" style={{ flex: 1, overflowY: "auto", minHeight: 0, maxHeight: "none" }}>
-              {searchResults.map((song) => {
-                const isSelected = selectedTracks.some((t) => t.name === song);
-                return (
-                  <div key={song} className="search-item">
-                    <span className="song-name">{song}</span>
-                    <button
-                      onClick={() => toggleTrack(song)}
-                      className={`add-btn ${isSelected ? "active" : ""}`}
-                    >
-                      {isSelected ? "✓" : "+"}
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
         </div>
 
         {/* Vertical Divider */}
