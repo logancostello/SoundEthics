@@ -15,18 +15,18 @@ import json
 
 ACESTEP_URL = "http://localhost:8001"
 
-def generate_with_ace(audio_path: str, prompt: str = "") -> str:
+def generate_with_ace(audio_path, prompt, bpm, duration, inference_steps, seed):
     payload = {
         "prompt": prompt,
         "audio_path": os.path.abspath(audio_path),
         "task": "cover",
         "thinking": False,
-        "bpm": 90,
+        "bpm": bpm,
+        "duration": duration,
+        "num_inference_steps": inference_steps,
+        "seed": seed,
         "key_scale": "C Major",
         "time_signature": "4",
-        "duration": 10.0,
-        "num_inference_steps": 8,
-        "seed": -1,
         "audio_format": "wav",
     }
     resp = requests.post(f"{ACESTEP_URL}/release_task", json=payload)
@@ -144,7 +144,11 @@ def upload_file():
         stem1 = request.form.get("stem1")
         file2 = request.files.get('file2')
         stem2 = request.form.get("stem2")
-        prompt = request.form.get("prompt") or "lofi hip hop, chill, relaxing, vinyl warmth"
+        prompt = request.form.get("prompt") or ""
+        bpm = request.form.get("bpm") or 120
+        duration = request.form.get("duration") or 10
+        inference_steps = request.form.get("inferenceSteps") or 8
+        seed = request.form.get("seed") or -1
 
         if not file1 and not file2:
             raise ValueError("No conditioning files provided")
@@ -172,7 +176,7 @@ def upload_file():
 
         for stem_type, stem_filepath in split_filepaths.items():
             # Step 1: generate full song conditioned on this stem
-            ace_output = generate_with_ace(stem_filepath, prompt)
+            ace_output = generate_with_ace(stem_filepath, prompt, bpm, duration, inference_steps, seed)
 
             # Step 2: save the raw ACE-Step output as {stemtype}_generated.wav
             generated_song_path = os.path.join(app.config['GENERATED_FOLDER'], f"{stem_type}_generated.wav")

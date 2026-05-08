@@ -1,4 +1,4 @@
-export async function handleGenerate(selectedTracks, prompt, { onError, onSuccess, onLoading }) {
+export async function handleGenerate(selectedTracks, prompt, params, { onError, onSuccess, onLoading }) {
   if (selectedTracks.length === 0) {
     onError("No tracks selected. Please upload a track first.");
     return;
@@ -21,6 +21,12 @@ export async function handleGenerate(selectedTracks, prompt, { onError, onSucces
   }
 
   formData.append("prompt", prompt);
+  formData.append("prompt", prompt);
+  formData.append("bpm", params.bpm);
+  formData.append("duration", params.duration);
+  formData.append("inferenceSteps", params.inferenceSteps);
+  formData.append("seed", params.seed);
+
 
   onLoading(true);
   onError(null);

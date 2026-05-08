@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import Navbar from "./components/Navbar";
 import AudioPlayer from "./components/AudioPlayer";
 import AttributionTable from "./components/AttributionTable";
+import NumberInput from "./components/NumberInput";
 import { handleGenerate } from "./services/generateService";
 import "./App.css";
 
@@ -14,6 +15,10 @@ function App() {
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [stemResult, setStemResult] = useState(null);
+  const [bpm, setBpm] = useState(90);
+  const [duration, setDuration] = useState(10.0);
+  const [inferenceSteps, setInferenceSteps] = useState(8);
+  const [seed, setSeed] = useState(-1);
 
   const draggingX = useRef(false);
   const draggingY = useRef(false);
@@ -64,7 +69,7 @@ function App() {
     setStemResult(null);
     const tracksSnapshot = selectedTracks.map(t => ({ name: t.name, stem: t.stem }));
 
-    handleGenerate(selectedTracks, prompt, {
+    handleGenerate(selectedTracks, prompt, { bpm, duration, inferenceSteps, seed }, {
       onError: setError,
       onSuccess: (audioUrl, filename) =>
         setStemResult({ audioUrl, filename, tracks: tracksSnapshot }),
@@ -157,6 +162,16 @@ function App() {
             </div>
           </div>
 
+          {/* Hyperparameters */}
+          <div style={{ flexShrink: 0 }}>
+            <div className="section-label">Parameters</div>
+            <div className="parameters-grid">
+              <NumberInput label="BPM"              value={bpm}            onChange={setBpm}            min={40}  max={240} />
+              <NumberInput label="Duration (s)"     value={duration}       onChange={setDuration}       min={5}   max={30}  />
+              <NumberInput label="Inference Steps"  value={inferenceSteps} onChange={setInferenceSteps} min={1}   max={100} />
+              <NumberInput label="Seed"             value={seed}           onChange={setSeed}           min={-1}            />
+            </div>
+          </div>
         </div>
 
         {/* Vertical Divider */}
