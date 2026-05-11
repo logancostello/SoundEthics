@@ -326,3 +326,24 @@ body {
 .number-input-field::-webkit-inner-spin-button {
   opacity: 1;
 }
+
+.dropdown-input {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dropdown-label {
+  font-size: var(--font-size-small);
+  color: var(--color-text-muted);
+}
+
+.dropdown-select {
+  width: 100%;
+  background: var(--color-input-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  color: var(--color-text);
+  padding: 4px 8px;
+  font-size: var(--font-size-small);
+}
