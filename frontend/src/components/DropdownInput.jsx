@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 
-export default function DropdownInput({ label, valueArray }) {
+export default function DropdownInput({ label, valueArray, onChange }) {
     const [selected, setSelected] = useState("Key")
     const [open, setOpen] = useState(false)
 
     let handleChange = (e) => {
-        setSelected(e.target.value)
+        setSelected(e.target.value);
+        onChange(e.target.value);
     }
 
     return (

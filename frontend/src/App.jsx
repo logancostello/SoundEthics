@@ -21,6 +21,7 @@ function App() {
   const [inferenceSteps, setInferenceSteps] = useState(8);
   const [seed, setSeed] = useState(-1);
   const [similarity, setSimilarity] = useState(-1);
+  const [key, setKey] = useState("");
 
   const draggingX = useRef(false);
   const draggingY = useRef(false);
@@ -71,7 +72,7 @@ function App() {
     setStemResult(null);
     const tracksSnapshot = selectedTracks.map(t => ({ name: t.name, stem: t.stem }));
 
-    handleGenerate(selectedTracks, prompt, { bpm, duration, inferenceSteps, seed, similarity }, {
+    handleGenerate(selectedTracks, prompt, { bpm, duration, inferenceSteps, seed, similarity, key }, {
       onError: setError,
       onSuccess: (audioUrl, filename) =>
         setStemResult({ audioUrl, filename, tracks: tracksSnapshot }),
@@ -175,7 +176,7 @@ function App() {
               <NumberInput label="Inference Steps"  value={inferenceSteps} onChange={setInferenceSteps} min={1}   max={100} />
               <NumberInput label="Seed"             value={seed}           onChange={setSeed}           min={-1}            />
               <NumberInput label="Similarity"       value={similarity}     onChange={setSimilarity}     min={1}   max={10}  />
-              <DropdownInput label="Key"            valueArray={keys}                                                       />
+              <DropdownInput label="Key"            valueArray={keys}      onChange={setKey}                                />
             </div>
           </div>
         </div>

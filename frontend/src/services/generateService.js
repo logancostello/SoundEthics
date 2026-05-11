@@ -26,13 +26,14 @@ export async function handleGenerate(selectedTracks, prompt, params, { onError, 
   formData.append("duration", params.duration);
   formData.append("inferenceSteps", params.inferenceSteps);
   formData.append("seed", params.seed);
-
+  formData.append("similarity", params.similarity);
+  formData.append("key", params.key);
 
   onLoading(true);
   onError(null);
 
   try {
-    const response = await fetch("/api/upload_file", {
+    const response = await fetch("http://localhost:5000/upload_file", { // TODO: CHANGE URL BACK
       method: "POST",
       body: formData,
     });
@@ -42,7 +43,7 @@ export async function handleGenerate(selectedTracks, prompt, params, { onError, 
     }
 
     const { url } = await response.json();
-    const fileResponse = await fetch(`/api${url}`);
+    const fileResponse = await fetch(`http://localhost:5000${url}`); // TODO: CHANGE BACK
 
     if (!fileResponse.ok) {
       throw new Error("Failed to fetch generated file.");
