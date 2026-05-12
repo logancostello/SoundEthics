@@ -17,12 +17,12 @@ from dotenv import load_dotenv
 load_dotenv()
 ACESTEP_URL = os.environ.get("ACESTEP_URL")
 
-def generate_with_ace(audio_path, prompt, bpm, duration, inference_steps, seed):
+def generate_with_ace(audio_path, prompt, bpm, duration, inference_steps, seed, is_thinking):
     payload = {
         "caption": prompt,
         "task_type": "text2music", # cover or text2music, unsure which is best
         "lyrics": "[Instrumental]",
-        "thinking": True,
+        "thinking": is_thinking,
         "bpm": bpm,
         "duration": duration,
         "inference_steps": inference_steps,
@@ -163,6 +163,7 @@ def upload_file():
         duration = request.form.get("duration") or 10
         inference_steps = request.form.get("inferenceSteps") or 8
         seed = request.form.get("seed") or -1
+        is_thinking = request.form.get("isThinking") or True
 
         if not file1 and not file2:
             raise ValueError("No conditioning files provided")
@@ -190,7 +191,7 @@ def upload_file():
 
         for stem_type, stem_filepath in split_filepaths.items():
             # Step 1: generate full song conditioned on this stem
-            ace_output = generate_with_ace(stem_filepath, prompt, bpm, duration, inference_steps, seed)
+            ace_output = generate_with_ace(stem_filepath, prompt, bpm, duration, inference_steps, seed, is_thinking)
 
             # Step 2: save the raw ACE-Step output as {stemtype}_generated.wav
             generated_song_path = os.path.join(app.config['GENERATED_FOLDER'], f"{stem_type}_generated.wav")
@@ -350,7 +351,6 @@ def master_to_file(input_path, output_path):
     y = ensure_2d(y)
     mastered = master_mix(y, sr)
     sf.write(output_path, mastered.T, sr)
-
 
 if __name__ == '__main__':
     app.run(debug=True)

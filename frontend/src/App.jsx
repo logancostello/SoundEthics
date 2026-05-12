@@ -3,6 +3,7 @@ import Navbar from "./components/Navbar";
 import AudioPlayer from "./components/AudioPlayer";
 import AttributionTable from "./components/AttributionTable";
 import NumberInput from "./components/NumberInput";
+import BooleanInput from "./components/BooleanInput";
 import { handleGenerate } from "./services/generateService";
 import "./App.css";
 
@@ -19,6 +20,7 @@ function App() {
   const [duration, setDuration] = useState(10.0);
   const [inferenceSteps, setInferenceSteps] = useState(8);
   const [seed, setSeed] = useState(-1);
+  const [isThinking, setThinking] = useState(false);
 
   const draggingX = useRef(false);
   const draggingY = useRef(false);
@@ -69,7 +71,8 @@ function App() {
     setStemResult(null);
     const tracksSnapshot = selectedTracks.map(t => ({ name: t.name, stem: t.stem }));
 
-    handleGenerate(selectedTracks, prompt, { bpm, duration, inferenceSteps, seed }, {
+    // TODO: here is the call to generation, so would need to add a parameter here
+    handleGenerate(selectedTracks, prompt, { bpm, duration, inferenceSteps, seed, isThinking }, {
       onError: setError,
       onSuccess: (audioUrl, filename) =>
         setStemResult({ audioUrl, filename, tracks: tracksSnapshot }),
@@ -170,6 +173,8 @@ function App() {
               <NumberInput label="Duration (s)"     value={duration}       onChange={setDuration}       min={5}   max={30}  />
               <NumberInput label="Inference Steps"  value={inferenceSteps} onChange={setInferenceSteps} min={1}   max={100} />
               <NumberInput label="Seed"             value={seed}           onChange={setSeed}           min={-1}            />
+              <BooleanInput label="Thinking"        value={isThinking}     onChange={setThinking}/>
+
             </div>
           </div>
         </div>
