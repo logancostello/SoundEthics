@@ -17,9 +17,3 @@ To setup and run backend:
 - ```cd backend```
 - ```pip install -r requirements.txt```
 - ```python app.py```
-
-> **PLEASE NOTE** that we are using a cloud-hosted verion of [Ace-Step 1.5](https://github.com/ace-step/ACE-Step-1.5). You will need to have access to that URL to use this application. Once you gain access, please create a .venv file in root and add the URL. Your .venv file will thus look like: 
-```python
-ACESTEP_URL = CLOUD_HOSTED_URL
-```
-
