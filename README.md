@@ -17,8 +17,3 @@ To setup and run backend:
 - ```cd backend```
 - ```pip install -r requirements.txt```
 - ```python app.py```
-
-**PLEASE NOTE** that JASCO model is gated, so you will have to get an access token from hugging face to use model. You can request that token [here](https://huggingface.co/facebook/jasco-chords-drums-melody-400M). Once you do so, please create a .venv file in root and add your token. Your .venv file will thus look like: 
-```python
-HF_TOKEN = YOUR_HUGGING_FACE_TOKEN
-```
