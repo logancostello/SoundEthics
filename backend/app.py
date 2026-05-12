@@ -45,9 +45,6 @@ def generate_with_ace(audio_path, prompt, bpm, duration, inference_steps, seed, 
     else: 
         payload["duration"] = 30
 
-    for key, value in payload.items():
-        print(key, value)
-
     with open(audio_path, "rb") as f:
         files = {"src_audio": (os.path.basename(audio_path), f, "audio/wav")}
         resp = requests.post(f"{ACESTEP_URL}/release_task", data=payload, files=files)
