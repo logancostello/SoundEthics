@@ -17,7 +17,7 @@ from dotenv import load_dotenv
 load_dotenv()
 ACESTEP_URL = os.environ.get("ACESTEP_URL")
 
-def generate_with_ace(audio_path, prompt, bpm, duration, inference_steps, seed, is_thinking, cover_strength):
+def generate_with_ace(audio_path, prompt, bpm, duration, inference_steps, seed, is_thinking, cover_strength, key):
     payload = {
         "task_type": "text2music", # cover or text2music, unsure which is best
         "lyrics": "[Instrumental]",
@@ -180,6 +180,7 @@ def upload_file():
         duration = request.form.get("duration") or 10
         inference_steps = request.form.get("inferenceSteps") or 8
         seed = request.form.get("seed") or -1
+        key = request.form.get("key") or ""
         is_thinking = request.form.get("isThinking") or True
         cover_strength = request.form.get("coverStrength") or 0.9
 
@@ -209,7 +210,8 @@ def upload_file():
 
         for stem_type, stem_filepath in split_filepaths.items():
             # Step 1: generate full song conditioned on this stem
-            ace_output = generate_with_ace(stem_filepath, prompt, bpm, duration, inference_steps, seed, is_thinking, cover_strength)
+            ace_output = generate_with_ace(stem_filepath, prompt, bpm, duration, inference_steps, seed, is_thinking, cover_strength, key)
+
 
             # Step 2: save the raw ACE-Step output as {stemtype}_generated.wav
             generated_song_path = os.path.join(app.config['GENERATED_FOLDER'], f"{stem_type}_generated.wav")
