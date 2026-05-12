@@ -19,19 +19,34 @@ ACESTEP_URL = os.environ.get("ACESTEP_URL")
 
 def generate_with_ace(audio_path, prompt, bpm, duration, inference_steps, seed, is_thinking, cover_strength):
     payload = {
-        "caption": prompt,
         "task_type": "text2music", # cover or text2music, unsure which is best
         "lyrics": "[Instrumental]",
-        "thinking": is_thinking,
-        "bpm": bpm,
-        "duration": duration,
-        "inference_steps": inference_steps,
-        "seed": seed,
         "keyscale": "C Major",
         "timesignature": "4",
         "audio_format": "wav",
-        "audio_cover_strength": cover_strength, 
+        "thinking" : is_thinking
     }
+
+    # add optional parameters, if they exist
+    if prompt != "null":
+        payload["caption"] = prompt
+    if bpm != "null": 
+        payload["bpm"] = bpm
+    if inference_steps != "null":
+        payload["inference_steps"] = inference_steps
+    if seed != "null":
+        payload["seed"] = seed
+    if cover_strength != "null":
+        payload["audio_cover_strength"] = cover_strength
+
+    # set default duration to 30 seconds, since API default is 120 (faster generation)
+    if duration != "null":
+        payload["duration"] = duration
+    else: 
+        payload["duration"] = 30
+
+    for key, value in payload.items():
+        print(key, value)
 
     with open(audio_path, "rb") as f:
         files = {"src_audio": (os.path.basename(audio_path), f, "audio/wav")}
@@ -158,7 +173,9 @@ def upload_file():
         stem1 = request.form.get("stem1")
         file2 = request.files.get('file2')
         stem2 = request.form.get("stem2")
-        prompt = request.form.get("prompt") or "lofi hip hop song"
+        prompt = request.form.get("prompt")
+        
+        # TODO: change
         bpm = request.form.get("bpm") or 120
         duration = request.form.get("duration") or 10
         inference_steps = request.form.get("inferenceSteps") or 8
