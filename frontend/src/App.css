@@ -353,3 +353,37 @@ body {
   font-size: var(--font-size-small);
   color: var(--color-text);
 }
+
+.boolean-input-track {
+  width: 36px;
+  height: 20px;
+  border-radius: 10px;
+  background: var(--color-border-secondary, #ccc);
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.18s;
+  flex-shrink: 0;
+}
+
+.boolean-input-track.on {
+  background: var(--color-text-primary, #111);
+}
+
+.boolean-input-thumb {
+  display: block;
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: white;
+  transition: transform 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+}
+
+.boolean-input-track.on .boolean-input-thumb {
+  transform: translateX(16px);
+}

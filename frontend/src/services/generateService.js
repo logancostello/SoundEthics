@@ -20,13 +20,15 @@ export async function handleGenerate(selectedTracks, prompt, params, { onError, 
     formData.append("stem2", selectedTracks[1].stem);
   }
 
+  // TODO: this is where I would append the data to the params? 
   formData.append("prompt", prompt);
   formData.append("prompt", prompt);
   formData.append("bpm", params.bpm);
   formData.append("duration", params.duration);
   formData.append("inferenceSteps", params.inferenceSteps);
   formData.append("seed", params.seed);
-  formData.append("similarity", params.similarity);
+  formData.append("coverStrength", params.coverStrength);
+  formData.append("isThinking", params.isThinking);
   formData.append("key", params.key);
 
   onLoading(true);
