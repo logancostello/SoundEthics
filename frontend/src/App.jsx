@@ -20,7 +20,7 @@ function App() {
   const [duration, setDuration] = useState(10.0);
   const [inferenceSteps, setInferenceSteps] = useState(8);
   const [seed, setSeed] = useState(-1);
-  const [isThinking, setThinking] = useState(false);
+  const [isThinking, setThinking] = useState(true);
 
   const draggingX = useRef(false);
   const draggingY = useRef(false);
