@@ -99,7 +99,8 @@ function App() {
 
   const hasSelections = selectedTracks.length > 0;
 
-  const keys = ["C major", "B♭ major", "F major"];
+  const keys = ["C major", "A minor", "G major", "E minor", "D major", "B minor", "A major", "F# minor", "E major", "C# minor", "B major", "G# minor", "F# major", "D# minor", "C# major", "A# minor",
+    "F major", "D minor", "B♭ major", "G minor", "E♭ major", "C minor", "A♭ major", "F minor", "D♭ major", "B♭ minor", "G♭ major", "E♭ minor", "C♭ major", "A♭ minor"];
 
   return (
     <div className="app">
