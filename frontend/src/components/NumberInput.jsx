@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 
-export default function NumberInput({ label, value, onChange, min, max, step = 1, placeholder }) {
-  const [raw, setRaw] = useState(String(value));
+export default function NumberInput({ label, value, onChange, min, max, step = 1, placeholder}) {
+  const [raw, setRaw] = useState(String(value) ?? "");
 
   // keep raw in sync if parent changes value externally
   useEffect(() => {
-    setRaw(String(value));
+    setRaw(String(value) ?? "");
   }, [value]);
 
   const handleChange = (e) => {
@@ -13,7 +13,8 @@ export default function NumberInput({ label, value, onChange, min, max, step = 1
 
     // allow empty string or a lone minus sign while typing
     if (input === "" || input === "-") {
-      setRaw(input);
+      setRaw("");
+      onChange(null); 
       return;
     }
 
@@ -30,8 +31,19 @@ export default function NumberInput({ label, value, onChange, min, max, step = 1
   };
 
   const handleBlur = () => {
-    let num = Number(raw);
-    if (raw === "" || raw === "-" || isNaN(num)) num = min ?? 0;
+    // if empty, keep it empty (don't force a number)
+    if (raw === "") {
+      onChange(null);
+      return;
+    }
+
+    let num = Number(raw); 
+    if (isNaN(num)) {
+      setRaw("");
+      onChange(null);
+      return;
+    }
+  
     if (min !== undefined && num < min) num = min;
     if (max !== undefined && num > max) num = max;
     setRaw(String(num));
