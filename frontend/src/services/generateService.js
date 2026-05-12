@@ -27,6 +27,7 @@ export async function handleGenerate(selectedTracks, prompt, params, { onError, 
   formData.append("duration", params.duration);
   formData.append("inferenceSteps", params.inferenceSteps);
   formData.append("seed", params.seed);
+  formData.append("coverStrength", params.coverStrength);
   formData.append("isThinking", params.isThinking);
 
 

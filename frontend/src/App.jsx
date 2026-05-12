@@ -21,6 +21,7 @@ function App() {
   const [inferenceSteps, setInferenceSteps] = useState(8);
   const [seed, setSeed] = useState(-1);
   const [isThinking, setThinking] = useState(true);
+  const [coverStrength, setCoverStrength] = useState(0.9);
 
   const draggingX = useRef(false);
   const draggingY = useRef(false);
@@ -72,7 +73,7 @@ function App() {
     const tracksSnapshot = selectedTracks.map(t => ({ name: t.name, stem: t.stem }));
 
     // TODO: here is the call to generation, so would need to add a parameter here
-    handleGenerate(selectedTracks, prompt, { bpm, duration, inferenceSteps, seed, isThinking }, {
+    handleGenerate(selectedTracks, prompt, { bpm, duration, inferenceSteps, seed, isThinking, coverStrength }, {
       onError: setError,
       onSuccess: (audioUrl, filename) =>
         setStemResult({ audioUrl, filename, tracks: tracksSnapshot }),
@@ -173,6 +174,7 @@ function App() {
               <NumberInput label="Duration (s)"     value={duration}       onChange={setDuration}       min={5}   max={30}  />
               <NumberInput label="Inference Steps"  value={inferenceSteps} onChange={setInferenceSteps} min={1}   max={100} />
               <NumberInput label="Seed"             value={seed}           onChange={setSeed}           min={-1}            />
+              <NumberInput label="Cover Strength"   value={coverStrength}  onChange={setCoverStrength}  min={0}   max={1.0}  step={0.1}/>
               <BooleanInput label="Thinking"        value={isThinking}     onChange={setThinking}/>
 
             </div>
