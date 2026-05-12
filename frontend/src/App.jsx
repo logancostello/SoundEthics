@@ -3,6 +3,7 @@ import Navbar from "./components/Navbar";
 import AudioPlayer from "./components/AudioPlayer";
 import AttributionTable from "./components/AttributionTable";
 import NumberInput from "./components/NumberInput";
+import DropdownInput from "./components/DropdownInput";
 import BooleanInput from "./components/BooleanInput";
 import { handleGenerate } from "./services/generateService";
 import "./App.css";
@@ -20,6 +21,7 @@ function App() {
   const [duration, setDuration] = useState(10.0);
   const [inferenceSteps, setInferenceSteps] = useState(8);
   const [seed, setSeed] = useState(-1);
+  const [key, setKey] = useState("");
   const [isThinking, setThinking] = useState(true);
   const [coverStrength, setCoverStrength] = useState(0.9);
 
@@ -73,7 +75,7 @@ function App() {
     const tracksSnapshot = selectedTracks.map(t => ({ name: t.name, stem: t.stem }));
 
     // TODO: here is the call to generation, so would need to add a parameter here
-    handleGenerate(selectedTracks, prompt, { bpm, duration, inferenceSteps, seed, isThinking, coverStrength }, {
+    handleGenerate(selectedTracks, prompt, { bpm, duration, inferenceSteps, seed, isThinking, coverStrength, key }, {
       onError: setError,
       onSuccess: (audioUrl, filename) =>
         setStemResult({ audioUrl, filename, tracks: tracksSnapshot }),
@@ -99,6 +101,9 @@ function App() {
   };
 
   const hasSelections = selectedTracks.length > 0;
+
+  const keys = ["C major", "A minor", "G major", "E minor", "D major", "B minor", "A major", "F# minor", "E major", "C# minor", "B major", "G# minor", "F# major", "D# minor", "C# major", "A# minor",
+    "F major", "D minor", "B♭ major", "G minor", "E♭ major", "C minor", "A♭ major", "F minor", "D♭ major", "B♭ minor", "G♭ major", "E♭ minor", "C♭ major", "A♭ minor"];
 
   return (
     <div className="app">
@@ -175,8 +180,8 @@ function App() {
               <NumberInput label="Inference Steps"  value={inferenceSteps} onChange={setInferenceSteps} min={1}   max={100} />
               <NumberInput label="Seed"             value={seed}           onChange={setSeed}           min={-1}            />
               <NumberInput label="Cover Strength"   value={coverStrength}  onChange={setCoverStrength}  min={0}   max={1.0}  step={0.1}/>
+              <DropdownInput label="Key"            valueArray={keys}      onChange={setKey}                                />
               <BooleanInput label="Thinking"        value={isThinking}     onChange={setThinking}/>
-
             </div>
           </div>
         </div>
