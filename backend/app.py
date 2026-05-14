@@ -32,8 +32,6 @@ def generate_with_ace(audio_path, prompt, bpm, duration, inference_steps, seed, 
         payload["caption"] = prompt
     if bpm != "null": 
         payload["bpm"] = bpm
-    if inference_steps != "null":
-        payload["inference_steps"] = inference_steps
     if seed != "null":
         payload["seed"] = seed
     if cover_strength != "null":
@@ -44,6 +42,12 @@ def generate_with_ace(audio_path, prompt, bpm, duration, inference_steps, seed, 
         payload["duration"] = duration
     else: 
         payload["duration"] = 30
+
+    # set default inference_steps to 20 for quality output
+    if inference_steps != "null":
+        payload["inference_steps"] = inference_steps
+    else: 
+        payload["inference_steps"] = 20
 
     with open(audio_path, "rb") as f:
         files = {"src_audio": (os.path.basename(audio_path), f, "audio/wav")}
@@ -208,7 +212,6 @@ def upload_file():
         for stem_type, stem_filepath in split_filepaths.items():
             # Step 1: generate full song conditioned on this stem
             ace_output = generate_with_ace(stem_filepath, prompt, bpm, duration, inference_steps, seed, is_thinking, cover_strength, key)
-
 
             # Step 2: save the raw ACE-Step output as {stemtype}_generated.wav
             generated_song_path = os.path.join(app.config['GENERATED_FOLDER'], f"{stem_type}_generated.wav")
