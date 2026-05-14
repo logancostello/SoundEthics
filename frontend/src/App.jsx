@@ -175,9 +175,9 @@ function App() {
           <div style={{ flexShrink: 0 }}>
             <div className="section-label">Parameters</div>
             <div className="parameters-grid">
-              <NumberInput label="BPM"              value={bpm}            onChange={setBpm}            min={40}  max={240} />
+              <NumberInput label="BPM"              value={bpm}            onChange={setBpm}            min={60}  max={160} />
               <NumberInput label="Duration (s)"     value={duration}       onChange={setDuration}       min={30}   max={120}  />
-              <NumberInput label="Inference Steps"  value={inferenceSteps} onChange={setInferenceSteps} min={1}   max={100} />
+              <NumberInput label="Inference Steps"  value={inferenceSteps} onChange={setInferenceSteps} min={15}   max={30} />
               <NumberInput label="Seed"             value={seed}           onChange={setSeed}           min={-1}            />
               <NumberInput label="Cover Strength"   value={coverStrength}  onChange={setCoverStrength}  min={0}   max={1.0}  step={0.1}/>
               <DropdownInput label="Key"            valueArray={keys}      onChange={setKey}                                />
