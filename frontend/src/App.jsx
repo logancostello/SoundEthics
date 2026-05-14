@@ -104,7 +104,14 @@ function App() {
 
   const keys = ["C major", "A minor", "G major", "E minor", "D major", "B minor", "A major", "F# minor", "E major", "C# minor", "B major", "G# minor", "F# major", "D# minor", "C# major", "A# minor",
     "F major", "D minor", "B♭ major", "G minor", "E♭ major", "C minor", "A♭ major", "F minor", "D♭ major", "B♭ minor", "G♭ major", "E♭ minor", "C♭ major", "A♭ minor"];
-
+  
+  const bpmDesc = "BPM (Beats per Minute): Speed of musical composition"
+  const durationDesc = "Duration: Length of output audio in seconds"
+  const infStepsDesc = "Inference Steps: Number of denoising steps. More steps means higher-quality output"
+  const seedDesc = "Seed: Number used to control randomness. Use the same seed multiple times to generate the same output"
+  const coverStrDesc = "Cover Strength: How similar output audio is to input audio"
+  const keyDesc = "Key: Musical key signature"
+  const thinkingDesc = "Thinking: Enables ACE-Step's LLM to analyze input and structure coherent output. We recommend leaving this on for best results!"
   return (
     <div className="app">
       <Navbar />
@@ -175,13 +182,13 @@ function App() {
           <div style={{ flexShrink: 0 }}>
             <div className="section-label">Parameters</div>
             <div className="parameters-grid">
-              <NumberInput label="BPM"              value={bpm}            onChange={setBpm}            min={60}  max={160} />
-              <NumberInput label="Duration (s)"     value={duration}       onChange={setDuration}       min={30}   max={120}  />
-              <NumberInput label="Inference Steps"  value={inferenceSteps} onChange={setInferenceSteps} min={15}   max={30} />
-              <NumberInput label="Seed"             value={seed}           onChange={setSeed}           min={-1}            />
-              <NumberInput label="Cover Strength"   value={coverStrength}  onChange={setCoverStrength}  min={0}   max={1.0}  step={0.1}/>
-              <DropdownInput label="Key"            valueArray={keys}      onChange={setKey}                                />
-              <BooleanInput label="Thinking"        value={isThinking}     onChange={setThinking}/>
+              <NumberInput label="BPM"              desc={bpmDesc} value={bpm}            onChange={setBpm}            min={60}  max={120} />
+              <NumberInput label="Duration (s)"     desc={durationDesc} value={duration}       onChange={setDuration}       min={30}   max={120}  />
+              <NumberInput label="Inference Steps"  desc={infStepsDesc} value={inferenceSteps} onChange={setInferenceSteps} min={15}   max={30} />
+              <NumberInput label="Seed"             desc={seedDesc} value={seed}           onChange={setSeed}           min={-1}            />
+              <NumberInput label="Cover Strength"   desc={coverStrDesc} value={coverStrength}  onChange={setCoverStrength}  min={0}   max={1.0}  step={0.1}/>
+              <DropdownInput label="Key"            desc={keyDesc} valueArray={keys}      onChange={setKey}                                />
+              <BooleanInput label="Thinking"        desc={thinkingDesc} value={isThinking}     onChange={setThinking}/>
             </div>
           </div>
         </div>

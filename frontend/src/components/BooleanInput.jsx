@@ -1,7 +1,7 @@
-export default function BooleanInput({ label, value, onChange }) {
+export default function BooleanInput({ label, desc, value, onChange }) {
   return (
     <div className="number-input">
-      <span className="number-input-label">{label}</span>
+      <span className="number-input-label" title={desc}>{label}</span>
       <button
         role="switch"
         aria-checked={value}

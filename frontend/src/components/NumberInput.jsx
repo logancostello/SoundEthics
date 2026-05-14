@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 
-export default function NumberInput({ label, value, onChange, min, max, step = 1, placeholder}) {
+export default function NumberInput({ label, desc, value, onChange, min, max, step = 1, placeholder }) {
   const [raw, setRaw] = useState(String(value) ?? "");
 
   // keep raw in sync if parent changes value externally
@@ -52,7 +52,7 @@ export default function NumberInput({ label, value, onChange, min, max, step = 1
 
   return (
     <div className="number-input">
-      <span className="number-input-label">{label}</span>
+      <span className="number-input-label" title={desc}>{label}</span>
       <input
         type="number"
         value={raw}
