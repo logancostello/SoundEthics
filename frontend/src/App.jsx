@@ -17,13 +17,13 @@ function App() {
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [stemResult, setStemResult] = useState(null);
-  const [bpm, setBpm] = useState(90);
-  const [duration, setDuration] = useState(10.0);
-  const [inferenceSteps, setInferenceSteps] = useState(8);
-  const [seed, setSeed] = useState(-1);
-  const [key, setKey] = useState("");
+  const [bpm, setBpm] = useState(null);
+  const [duration, setDuration] = useState(null);
+  const [inferenceSteps, setInferenceSteps] = useState(null);
+  const [seed, setSeed] = useState(null);
   const [isThinking, setThinking] = useState(true);
-  const [coverStrength, setCoverStrength] = useState(0.9);
+  const [coverStrength, setCoverStrength] = useState(null);
+   const [key, setKey] = useState("");
 
   const draggingX = useRef(false);
   const draggingY = useRef(false);
@@ -182,9 +182,9 @@ function App() {
           <div style={{ flexShrink: 0 }}>
             <div className="section-label">Parameters</div>
             <div className="parameters-grid">
-              <NumberInput label="BPM"              desc={bpmDesc} value={bpm}            onChange={setBpm}            min={40}  max={240} />
-              <NumberInput label="Duration (s)"     desc={durationDesc} value={duration}       onChange={setDuration}       min={5}   max={30}  />
-              <NumberInput label="Inference Steps"  desc={infStepsDesc} value={inferenceSteps} onChange={setInferenceSteps} min={1}   max={100} />
+              <NumberInput label="BPM"              desc={bpmDesc} value={bpm}            onChange={setBpm}            min={60}  max={120} />
+              <NumberInput label="Duration (s)"     desc={durationDesc} value={duration}       onChange={setDuration}       min={30}   max={120}  />
+              <NumberInput label="Inference Steps"  desc={infStepsDesc} value={inferenceSteps} onChange={setInferenceSteps} min={15}   max={30} />
               <NumberInput label="Seed"             desc={seedDesc} value={seed}           onChange={setSeed}           min={-1}            />
               <NumberInput label="Cover Strength"   desc={coverStrDesc} value={coverStrength}  onChange={setCoverStrength}  min={0}   max={1.0}  step={0.1}/>
               <DropdownInput label="Key"            desc={keyDesc} valueArray={keys}      onChange={setKey}                                />
