@@ -209,30 +209,16 @@ def upload_file():
 
         generated_stems = []
 
-        for stem_type, stem_filepath in split_filepaths.items():
-            # Step 1: generate full song conditioned on this stem
-            ace_output = generate_with_ace(stem_filepath, prompt, bpm, duration, inference_steps, seed, is_thinking, cover_strength, key)
-
-            # Step 2: save the raw ACE-Step output as {stemtype}_generated.wav
-            generated_song_path = os.path.join(app.config['GENERATED_FOLDER'], f"{stem_type}_generated.wav")
-            os.replace(ace_output, generated_song_path)
-
-            # Step 3: re-split the generated song to isolate the same stem
-            resplit_tensor = split_audio(generated_song_path, stem_type)
-            resplit_filepath = os.path.join(app.config['GENERATED_FOLDER'], f"{stem_type}_generated_split.wav")
-            demucs.api.save_audio(resplit_tensor, resplit_filepath, samplerate=separator.samplerate)
-
-            generated_stems.append(resplit_filepath)
-
-        # Step 4: combine all re-split stems into a single mix
+        # step 1: combine all stems
         combined_filepath = os.path.join(app.config['GENERATED_FOLDER'], "combined.wav")
-        combine_wavs(generated_stems, combined_filepath)
+        combine_wavs(list(split_filepaths.values()), combined_filepath)
+        
+        # step 2: generate output
+        ace_output = generate_with_ace(combined_filepath, prompt, bpm, duration, inference_steps, seed, is_thinking, cover_strength, key)
+        generated_song_path = os.path.join(app.config['GENERATED_FOLDER'], "generated.wav")
+        os.replace(ace_output, generated_song_path)
 
-        # Step 5: apply mastering chain and save final output
-        mastered_filepath = os.path.join(app.config['GENERATED_FOLDER'], "mastered.wav")
-        master_to_file(combined_filepath, mastered_filepath)
-
-        return jsonify({"url": "/generated/mastered.wav"})
+        return jsonify({"url": "/generated/generated.wav"})
 
     return """
         <h1>Upload & Split Audio</h1>
