@@ -12,16 +12,12 @@ export async function handleGenerate(selectedTracks, prompt, params, { onError, 
   }
 
   const formData = new FormData();
-  formData.append("file1", selectedTracks[0].file);
-  formData.append("stem1", selectedTracks[0].stem);
+  
+  selectedTracks.forEach((track, i) => {
+    formData.append(`file${i + 1}`, track.file);
+    formData.append(`stem${i + 1}`, track.stem);
+  });
 
-  if (selectedTracks.length >= 2) {
-    formData.append("file2", selectedTracks[1].file);
-    formData.append("stem2", selectedTracks[1].stem);
-  }
-
-  // TODO: this is where I would append the data to the params? 
-  formData.append("prompt", prompt);
   formData.append("prompt", prompt);
   formData.append("bpm", params.bpm);
   formData.append("duration", params.duration);
