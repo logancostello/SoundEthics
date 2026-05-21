@@ -139,7 +139,10 @@ function App() {
                       className="stem-select"
                     >
                       <option value="drums">Drums</option>
-                      <option value="melody">Melody</option>
+                      <option value="bass">Bass</option>
+                      <option value="guitar">Guitar</option>
+                      <option value="piano">Piano</option>
+                      <option value="other">Other</option>
                     </select>
                     <button
                       onClick={() => removeSelectedItem(track.name)}

@@ -105,9 +105,9 @@ GENERATED_FOLDER = "generated/"
 app.config['GENERATED_FOLDER'] = GENERATED_FOLDER
 
 ALLOWED_EXTENSIONS = {'wav', 'mp3'}
-ALLOWED_STEMS = {"drums", "melody"}
+ALLOWED_STEMS = {"drums", "bass", "guitar", "piano", "other"}
 
-separator = demucs.api.Separator()
+separator = demucs.api.Separator(model="htdemucs_6s")
 
 '''
 ----------------
@@ -121,17 +121,15 @@ def allowed_file(filename):
 
 def split_audio(audio_path, desired_stem):
     if desired_stem not in ALLOWED_STEMS:
-        raise ValueError("Desired Stem should be one of: drums, melody")
+        raise ValueError(f"Desired stem must be one of: {ALLOWED_STEMS}")
 
     origin, separated = separator.separate_audio_file(audio_path)
 
     for stem, source in separated.items():
         if stem == desired_stem:
             return source
-        elif stem == "other" and desired_stem == "melody":
-            return source
 
-    raise ValueError("Something went wrong when splitting audio!")
+    raise ValueError(f"Stem '{desired_stem}' not found in separation output")
 
 def split_and_save(file, stem_type):
     upload_filename = secure_filename(file.filename)
@@ -170,13 +168,7 @@ def upload_file():
 
         split_filepaths = {}
 
-        file1 = request.files.get('file1')
-        stem1 = request.form.get("stem1")
-        file2 = request.files.get('file2')
-        stem2 = request.form.get("stem2")
         prompt = request.form.get("prompt")
-        
-        # TODO: change
         bpm = request.form.get("bpm") or 120
         duration = request.form.get("duration") or 10
         inference_steps = request.form.get("inferenceSteps") or 8
@@ -185,29 +177,23 @@ def upload_file():
         is_thinking = request.form.get("isThinking") or True
         cover_strength = request.form.get("coverStrength") or 0.9
 
-        if not file1 and not file2:
-            raise ValueError("No conditioning files provided")
-
-        if file1 and file1.filename:
-            if not allowed_file(file1.filename):
-                raise ValueError("File type not allowed.")
-            if stem1 not in ALLOWED_STEMS:
-                raise ValueError("Stem type not allowed.")
-            stem_filepath = split_and_save(file1, stem1)
-            split_filepaths[stem1] = stem_filepath
-
-        if file2 and file2.filename:
-            if not allowed_file(file2.filename):
-                raise ValueError("File type not allowed.")
-            if stem2 not in ALLOWED_STEMS:
-                raise ValueError("Stem type not allowed.")
-            stem_filepath = split_and_save(file2, stem2)
-            split_filepaths[stem2] = stem_filepath
+        # read file1, file2, file3, ... until none found
+        i = 1
+        while True:
+            file = request.files.get(f"file{i}")
+            stem = request.form.get(f"stem{i}")
+            if not file or not file.filename:
+                break
+            if not allowed_file(file.filename):
+                raise ValueError(f"File {i}: file type not allowed.")
+            if stem not in ALLOWED_STEMS:
+                raise ValueError(f"File {i}: stem type not allowed.")
+            stem_filepath = split_and_save(file, stem)
+            split_filepaths[f"{stem}_{i}"] = stem_filepath 
+            i += 1
 
         if not split_filepaths:
             raise ValueError("No conditioning files provided")
-
-        generated_stems = []
 
         # step 1: combine all stems
         combined_filepath = os.path.join(app.config['GENERATED_FOLDER'], "combined.wav")
