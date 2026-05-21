@@ -105,9 +105,9 @@ GENERATED_FOLDER = "generated/"
 app.config['GENERATED_FOLDER'] = GENERATED_FOLDER
 
 ALLOWED_EXTENSIONS = {'wav', 'mp3'}
-ALLOWED_STEMS = {"drums", "melody"}
+ALLOWED_STEMS = {"drums", "bass", "guitar", "piano", "other"}
 
-separator = demucs.api.Separator()
+separator = demucs.api.Separator(model="htdemucs_6s")
 
 '''
 ----------------
@@ -121,17 +121,15 @@ def allowed_file(filename):
 
 def split_audio(audio_path, desired_stem):
     if desired_stem not in ALLOWED_STEMS:
-        raise ValueError("Desired Stem should be one of: drums, melody")
+        raise ValueError(f"Desired stem must be one of: {ALLOWED_STEMS}")
 
     origin, separated = separator.separate_audio_file(audio_path)
 
     for stem, source in separated.items():
         if stem == desired_stem:
             return source
-        elif stem == "other" and desired_stem == "melody":
-            return source
 
-    raise ValueError("Something went wrong when splitting audio!")
+    raise ValueError(f"Stem '{desired_stem}' not found in separation output")
 
 def split_and_save(file, stem_type):
     upload_filename = secure_filename(file.filename)
