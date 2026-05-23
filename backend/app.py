@@ -17,11 +17,10 @@ from dotenv import load_dotenv
 load_dotenv()
 ACESTEP_URL = os.environ.get("ACESTEP_URL")
 
-def generate_with_ace(audio_path, prompt, bpm, duration, inference_steps, seed, is_thinking, cover_strength, key):
+def generate_with_ace(audio_path, prompt, bpm, duration, inference_steps, seed, is_thinking, cover_strength, guidance_scale, key):
     payload = {
         "task_type": "text2music", # cover or text2music, unsure which is best
         "lyrics": "[Instrumental]",
-        "keyscale": "C Major",
         "timesignature": "4",
         "audio_format": "wav",
         "thinking" : is_thinking
@@ -34,8 +33,9 @@ def generate_with_ace(audio_path, prompt, bpm, duration, inference_steps, seed, 
         payload["bpm"] = bpm
     if seed != "null":
         payload["seed"] = seed
-    if cover_strength != "null":
-        payload["audio_cover_strength"] = cover_strength
+    # TODO: make sure this is fine .. it was hard-coded before ... 
+    if key != "null":
+        payload["keyscale"] = key
 
     # set default duration to 30 seconds, since API default is 120 (faster generation)
     if duration != "null":
@@ -48,6 +48,18 @@ def generate_with_ace(audio_path, prompt, bpm, duration, inference_steps, seed, 
         payload["inference_steps"] = inference_steps
     else: 
         payload["inference_steps"] = 20
+
+    # add audio and prompt adherence if they exist
+    # if not, set to default values based on our own testing with james ob
+    if cover_strength != "null":
+        payload["audio_cover_strength"] = cover_strength
+    else: 
+        payload["audio_cover_strength"] = 0.7
+
+    if guidance_scale != "null":
+        payload["guidance_scale"] = guidance_scale
+    else: 
+        payload["guidance_sclae"] = 0.3
 
     with open(audio_path, "rb") as f:
         files = {"src_audio": (os.path.basename(audio_path), f, "audio/wav")}
@@ -169,13 +181,14 @@ def upload_file():
         split_filepaths = {}
 
         prompt = request.form.get("prompt")
-        bpm = request.form.get("bpm") or 120
-        duration = request.form.get("duration") or 10
-        inference_steps = request.form.get("inferenceSteps") or 8
+        bpm = request.form.get("bpm")
+        duration = request.form.get("duration")
+        inference_steps = request.form.get("inferenceSteps")
         seed = request.form.get("seed") or -1
         key = request.form.get("key") or ""
         is_thinking = request.form.get("isThinking") or True
-        cover_strength = request.form.get("coverStrength") or 0.9
+        cover_strength = request.form.get("coverStrength")
+        guidance_scale = request.form.get("guidanceScale")
 
         # read file1, file2, file3, ... until none found
         i = 1
@@ -200,7 +213,7 @@ def upload_file():
         combine_wavs(list(split_filepaths.values()), combined_filepath)
         
         # step 2: generate output
-        ace_output = generate_with_ace(combined_filepath, prompt, bpm, duration, inference_steps, seed, is_thinking, cover_strength, key)
+        ace_output = generate_with_ace(combined_filepath, prompt, bpm, duration, inference_steps, seed, is_thinking, cover_strength, guidance_scale, key)
         generated_song_path = os.path.join(app.config['GENERATED_FOLDER'], "generated.wav")
         os.replace(ace_output, generated_song_path)
 
