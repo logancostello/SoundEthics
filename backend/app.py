@@ -61,10 +61,6 @@ def generate_with_ace(audio_path, prompt, bpm, duration, inference_steps, seed, 
     else: 
         payload["guidance_sclae"] = 0.3
 
-    # logging
-    print("AUDIO: " + str(payload["audio_cover_strength"]))
-    print("PROMPT: " + str(payload["guidance_sclae"]))
-
     with open(audio_path, "rb") as f:
         files = {"src_audio": (os.path.basename(audio_path), f, "audio/wav")}
         resp = requests.post(f"{ACESTEP_URL}/release_task", data=payload, files=files)
