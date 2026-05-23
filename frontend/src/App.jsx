@@ -23,6 +23,7 @@ function App() {
   const [seed, setSeed] = useState(null);
   const [isThinking, setThinking] = useState(true);
   const [coverStrength, setCoverStrength] = useState(null);
+  const [guidanceScale, setGuidanceScale] = useState(null);
    const [key, setKey] = useState("");
 
   const draggingX = useRef(false);
@@ -75,7 +76,7 @@ function App() {
     const tracksSnapshot = selectedTracks.map(t => ({ name: t.name, stem: t.stem }));
 
     // TODO: here is the call to generation, so would need to add a parameter here
-    handleGenerate(selectedTracks, prompt, { bpm, duration, inferenceSteps, seed, isThinking, coverStrength, key }, {
+    handleGenerate(selectedTracks, prompt, { bpm, duration, inferenceSteps, seed, isThinking, coverStrength, guidanceScale, key }, {
       onError: setError,
       onSuccess: (audioUrl, filename) =>
         setStemResult({ audioUrl, filename, tracks: tracksSnapshot }),
@@ -105,13 +106,14 @@ function App() {
   const keys = ["C major", "A minor", "G major", "E minor", "D major", "B minor", "A major", "F# minor", "E major", "C# minor", "B major", "G# minor", "F# major", "D# minor", "C# major", "A# minor",
     "F major", "D minor", "B♭ major", "G minor", "E♭ major", "C minor", "A♭ major", "F minor", "D♭ major", "B♭ minor", "G♭ major", "E♭ minor", "C♭ major", "A♭ minor"];
   
-  const bpmDesc = "BPM (Beats per Minute): Speed of musical composition"
-  const durationDesc = "Duration: Length of output audio in seconds"
-  const infStepsDesc = "Inference Steps: Number of denoising steps. More steps means higher-quality output"
-  const seedDesc = "Seed: Number used to control randomness. Use the same seed multiple times to generate the same output"
-  const coverStrDesc = "Cover Strength: How similar output audio is to input audio"
-  const keyDesc = "Key: Musical key signature"
-  const thinkingDesc = "Thinking: Enables ACE-Step's LLM to analyze input and structure coherent output. We recommend leaving this on for best results!"
+  const bpmDesc = "Beats Per Minute. Speed of musical composition."
+  const durationDesc = "Length of output audio in seconds."
+  const infStepsDesc = "Number of denoising steps. More steps means higher-quality output."
+  const seedDesc = "Number used to control randomness. Use the same seed multiple times to generate the same output."
+  const coverStrDesc = "How similar output audio is to input audio. We recommend using the value 0.7 for best results."
+  const guidanceScaleDesc = "How similar output audio is to input prompt. We recommend using the value 0.3 for best results"
+  const keyDesc = "Musical key signature."
+  const thinkingDesc = "Enables ACE-Step's LLM to analyze input and structure coherent output. We recommend leaving this on for best results!"
   return (
     <div className="app">
       <Navbar />
@@ -190,6 +192,7 @@ function App() {
               <NumberInput label="Inference Steps"  desc={infStepsDesc} value={inferenceSteps} onChange={setInferenceSteps} min={15}   max={30} />
               <NumberInput label="Seed"             desc={seedDesc} value={seed}           onChange={setSeed}           min={-1}            />
               <NumberInput label="Cover Strength"   desc={coverStrDesc} value={coverStrength}  onChange={setCoverStrength}  min={0}   max={1.0}  step={0.1}/>
+              <NumberInput label="Guidance Scale"   desc={guidanceScaleDesc} value={guidanceScale}  onChange={setGuidanceScale}  min={0}   max={1.0}  step={0.1}/>
               <DropdownInput label="Key"            desc={keyDesc} valueArray={keys}      onChange={setKey}                                />
               <BooleanInput label="Thinking"        desc={thinkingDesc} value={isThinking}     onChange={setThinking}/>
             </div>
