@@ -86,6 +86,7 @@ function App() {
 
   const handleFiles = (files) => {
     const newTracks = Array.from(files)
+      .filter(f => f.name.endsWith(".mp3") || f.name.endsWith(".wav"))
       .filter(f => !selectedTracks.some(t => t.name === f.name))
       .map(f => ({ name: f.name, stem: "drums", file: f }));
     setSelectedTracks(prev => [...prev, ...newTracks]);
@@ -164,7 +165,7 @@ function App() {
 
             <input
               type="file"
-              accept="audio/*"
+              accept=".mp3,.wav"
               multiple
               ref={fileInputRef}
               onChange={(e) => e.target.files.length && handleFiles(e.target.files)}
