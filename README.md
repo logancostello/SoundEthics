@@ -50,7 +50,7 @@ A short description of each model parameter.
 - **Duration**: Length of output audio in seconds.
 - **Inference Steps**: Number of denoising steps. More steps means higher-quality output.
 - **Seed**: Number used to control randomness. Use the same seed multiple times to generate the same output.
-- **Cover Strength**: How similar output audio is to input audio.
-- **Guidance Scale**: How similar output audio is to input prompt.
+- **Cover Strength**: How similar output audio is to input audio. Range from 0 (low) to 1 (high).
+- **Guidance Scale**: How similar output audio is to input prompt. Range from 0 (low) to 1 (high).
 - **Key**: Musical key.
 - **Thinking**: Enables ACE-Step's LLM to analyze input and structure coherent output. **We recommend leaving this on for best results!**
